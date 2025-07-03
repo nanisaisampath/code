@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICOM Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .viewport {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            margin: 5px;
+            position: relative; /* For absolute positioning of controls */
+        }
+
+        .viewport-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            text-align: center;
+            padding: 5px 0;
+            z-index: 10;
+        }
+
+        #viewportImage1, #viewportImage2 {
+            max-width: 90%;
+            max-height: 70%;
+            cursor: grab;
+        }
+
+        .controls {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .zoom-controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .zoom-btn {
+            padding: 8px 12px;
+            margin: 0 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .zoom-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .frame-slider-container {
+            width: 80%;
+            margin-top: 10px;
+        }
+
+        #frameSlider1, #frameSlider2 {
+            width: 100%;
+        }
+
+        .file-input-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #fileInput1, #fileInput2 {
+            margin: 10px;
+        }
+
+        /* Progress Overlay Styles */
+        .progress-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 20;
+        }
+
+        .progress-message {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .progress-details {
+            font-size: 1em;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Style for the reset button */
+        .reset-button {
+            padding: 8px 12px;
+            margin: 10px 0;
+            border: none;
+            background-color: #dc3545; /* Red color */
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .reset-button:hover {
+            background-color: #c82333; /* Darker red on hover */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="viewport">
+            <div class="viewport-header">Viewport 1</div>
+            <div class="file-input-container">
+                <input type="file" id="fileInput1" accept=".dcm">
+                <button onclick="resetViewport(1)" class="reset-button">Reset Viewport</button>
+            </div>
+            <img id="viewportImage1" src="#" alt="DICOM Image 1">
+            <div class="controls">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn(1)"><i class="fas fa-search-plus"></i></button>
+                    <button class="zoom-btn" onclick="zoomOut(1)"><i class="fas fa-search-minus"></i></button>
+                </div>
+              <!-- Flatten button for Viewport 1 -->
+              <div class="flatten-controls" style="display: flex; justify-content: center; margin-top: 10px;">
+                <button class="zoom-btn" onclick="flattenViewportImage(1)" id="flattenBtn1">
+                  <i class="fas fa-layer-group"></i> Flatten
+                </button>
+              </div>
+                <div class="frame-slider-container">
+                    <input type="range" id="frameSlider1" value="0" min="0" max="0" step="1">
+                </div>
+            </div>
+            <div id="progressOverlay1" class="progress-overlay">
+                <div class="progress-message">Loading DICOM...</div>
+                <div class="progress-details"></div>
+            </div>
+        </div>
+
+        <div class="viewport">
+            <div class="viewport-header">Viewport 2</div>
+            <div class="file-input-container">
+                <input type="file" id="fileInput2" accept=".dcm">
+                <button onclick="resetViewport(2)" class="reset-button">Reset Viewport</button>
+            </div>
+            <img id="viewportImage2" src="#" alt="DICOM Image 2">
+            <div class="controls">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="zoomIn(2)"><i class="fas fa-search-plus"></i></button>
+                    <button class="zoom-btn" onclick="zoomOut(2)"><i class="fas fa-search-minus"></i></button>
+                </div>
+              <!-- Flatten button for Viewport 2 -->
+              <div class="flatten-controls" style="display: flex; justify-content: center; margin-top: 10px;">
+                <button class="zoom-btn" onclick="flattenViewportImage(2)" id="flattenBtn2">
+                  <i class="fas fa-layer-group"></i> Flatten
+                </button>
+              </div>
+                <div class="frame-slider-container">
+                    <input type="range" id="frameSlider2" value="0" min="0" max="0" step="1">
+                </div>
+            </div>
+            <div id="progressOverlay2" class="progress-overlay">
+                <div class="progress-message">Loading DICOM...</div>
+                <div class="progress-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-core@2.2.3/dist/cornerstoneCore.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-wado-image-loader@4.0.0/dist/cornerstoneWADOImageLoader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-math@1.0.0/dist/cornerstoneMath.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-tools@6.1.0/dist/cornerstoneTools.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cornerstone-file-image-loader@2.1.0/dist/cornerstoneFileImageLoader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" integrity="sha512-QS4WKdW28NWVPzi6Sz+F1RzJdFQHs59iH3sb26eArRU5SI618NQmRGdoWq2Lm2Unk55GK8StJOJleaw2IDP6Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        // Initialize cornerstoneWADOImageLoader
+        cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+        cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+        cornerstoneWADOImageLoader.webWorkerManager.initialize({
+            maxWebWorkers: Math.ceil(navigator.hardwareConcurrency / 2),
+            startWebWorkersOnDemand: true,
+            taskConfiguration: {
+                'decodeTask': {
+                    loadCodecsOnStartup: true,
+                    initializeCodecsOnStartup: false,
+                    codecsPath: '/codecs/cornerstoneWADOImageLoader_codecs.js',
+                    useWebAssembly: true
+                }
+            }
+        });
+
+        // Initialize cornerstoneFileImageLoader
+        cornerstoneFileImageLoader.external.cornerstone = cornerstone;
+
+        const viewportData = {
+            1: {
+                element: document.getElementById('viewportImage1'),
+                scale: 1,
+                translation: { x: 0, y: 0 },
+                currentImageId: null,
+                imageIds: [],
+                currentFrame: 0,
+                dicom_file_path: null,
+                flattenedUrl: null
+            },
+            2: {
+                element: document.getElementById('viewportImage2'),
+                scale: 1,
+                translation: { x: 0, y: 0 },
+                currentImageId: null,
+                imageIds: [],
+                currentFrame: 0,
+                dicom_file_path: null,
+                flattenedUrl: null
+            }
+        };
+
+        document.getElementById('fileInput1').addEventListener('change', function(e) {
+            loadFile(e, 1);
+        });
+
+        document.getElementById('fileInput2').addEventListener('change', function(e) {
+            loadFile(e, 2);
+        });
+
+        async function loadFile(e, viewportNumber) {
+            const file = e.target.files[0];
+            if (!file) {
+                alert('No file selected.');
+                return;
+            }
+
+            const data = viewportData[viewportNumber];
+            data.scale = 1;
+            data.translation = { x: 0, y: 0 };
+            data.currentFrame = 0;
+            data.imageIds = [];
+            data.currentImageId = null;
+            data.dicom_file_path = file.name; // Store the file name
+
+            try {
+                showProgress(viewportNumber, 'Loading DICOM...', {
+                    'File Name': file.name,
+                    'Status': 'Loading'
+                });
+
+                const imageId = cornerstoneFileImageLoader.fileManager.add(file);
+                const image = await cornerstone.loadImage(imageId);
+
+                data.imageIds = [imageId]; // Store the imageId
+                data.currentImageId = imageId;
+
+                displayImage(viewportNumber, image);
+                setupImageInteractions(viewportNumber);
+                hideProgress(viewportNumber);
+
+            } catch (error) {
+                console.error('Error loading DICOM file:', error);
+                hideProgress(viewportNumber);
+                alert('Error loading DICOM file. Please check the console for details.');
+            }
+        }
+
+        function displayImage(viewportNumber, image) {
+            const element = viewportData[viewportNumber].element;
+
+            cornerstone.enable(element);
+
+            const viewport = cornerstone.getDefaultViewportForImage(element, image);
+            viewportData[viewportNumber].viewport = viewport; // Store the viewport
+
+            cornerstone.displayImage(element, image, viewport);
+
+            // Update frame slider if multiframe
+            if (image.data && image.data.string('x00280008') > 1) {
+                setupFrameSlider(viewportNumber, image.data.string('x00280008'));
+            } else {
+                document.getElementById(`frameSlider${viewportNumber}`).classList.add('hidden');
+            }
+        }
+
+        function setupFrameSlider(viewportNumber, numberOfFrames) {
+            const slider = document.getElementById(`frameSlider${viewportNumber}`);
+            slider.min = 0;
+            slider.max = numberOfFrames - 1;
+            slider.value = 0;
+            slider.classList.remove('hidden');
+
+            slider.oninput = function() {
+                displayFrame(viewportNumber, parseInt(this.value));
+            };
+        }
+
+        async function displayFrame(viewportNumber, frameIndex) {
+            const data = viewportData[viewportNumber];
+            data.currentFrame = frameIndex;
+
+            try {
+                showProgress(viewportNumber, `Loading Frame ${frameIndex + 1}...`, {
+                    'Frame': frameIndex + 1,
+                    'Status': 'Loading'
+                });
+
+                const image = await cornerstone.loadImage(data.imageIds[0] + '?frame=' + frameIndex);
+                displayImage(viewportNumber, image);
+                hideProgress(viewportNumber);
+
+            } catch (error) {
+                console.error('Error loading frame:', error);
+                hideProgress(viewportNumber);
+                alert('Error loading frame. Please check the console for details.');
+            }
+        }
+
+        function zoomIn(viewportNumber) {
+            const data = viewportData[viewportNumber];
+            data.scale *= 1.1;
+            updateViewport(viewportNumber);
+        }
+
+        function zoomOut(viewportNumber) {
+            const data = viewportData[viewportNumber];
+            data.scale /= 1.1;
+            updateViewport(viewportNumber);
+        }
+
+        function resetZoom(viewportNumber) {
+            const data = viewportData[viewportNumber];
+            data.scale = 1;
+            data.translation = { x: 0, y: 0 };
+            updateViewport(viewportNumber);
+        }
+
+        function updateViewport(viewportNumber) {
+            const data = viewportData[viewportNumber];
+            const element = data.element;
+            const viewport = cornerstone.getViewport(element);
+
+            viewport.scale = data.scale;
+            viewport.translation.x = data.translation.x;
+            viewport.translation.y = data.translation.y;
+
+            cornerstone.setViewport(element, viewport);
+        }
+
+        function setupImageInteractions(viewportNumber) {
+            const element = viewportData[viewportNumber].element;
+            let drag = false;
+            let lastX, lastY;
+
+            element.addEventListener('mousedown', function(e) {
+                drag = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                element.style.cursor = 'grabbing';
+            });
+
+            element.addEventListener('mouseup', function() {
+                drag = false;
+                element.style.cursor = 'grab';
+            });
+
+            element.addEventListener('mouseleave', function() {
+                drag = false;
+                element.style.cursor = 'grab';
+            });
+
+            element.addEventListener('mousemove', function(e) {
+                if (drag) {
+                    const deltaX = e.clientX - lastX;
+                    const deltaY = e.clientY - lastY;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+
+                    const data = viewportData[viewportNumber];
+                    data.translation.x += deltaX;
+                    data.translation.y += deltaY;
+                    updateViewport(viewportNumber);
+                }
+            });
+        }
+
+        function showProgress(viewportNumber, message, details = {}) {
+            const overlay = document.getElementById(`progressOverlay${viewportNumber}`);
+            const messageElement = overlay.querySelector('.progress-message');
+            const detailsElement = overlay.querySelector('.progress-details');
+
+            messageElement.textContent = message;
+
+            let detailsHTML = '';
+            for (const key in details) {
+                detailsHTML += `<div>${key}: ${details[key]}</div>`;
+            }
+            detailsElement.innerHTML = detailsHTML;
+
+            overlay.style.display = 'flex';
+        }
+
+        function hideProgress(viewportNumber) {
+            const overlay = document.getElementById(`progressOverlay${viewportNumber}`);
+            overlay.style.display = 'none';
+        }
+
+        function resetViewport(viewportNumber) {
+            const data = viewportData[viewportNumber];
+            const element = data.element;
+
+            // Reset image display
+            cornerstone.disable(element);
+            element.innerHTML = ''; // Clear the content of the viewport
+
+            // Reset zoom and pan
+            data.scale = 1;
+            data.translation = { x: 0, y: 0 };
+
+            // Reset file input
+            const fileInput = document.getElementById(`fileInput${viewportNumber}`);
+            fileInput.value = ''; // Clear the selected file
+
+            // Reset slider
+            const slider = document.getElementById(`frameSlider${viewportNumber}`);
+            slider.classList.add('hidden');
+
+            // Reset imageIds and currentImageId
+            data.imageIds = [];
+            data.currentImageId = null;
+            data.dicom_file_path = null;
+            data.flattenedUrl = null;
+        }
+
+        async function flattenImage() {
+            try {
+                const response = await fetch('/api/flatten_dicom_image');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                console.error('Error flattening image:', error);
+                alert('Failed to flatten image. Check console for details.');
+            }
+        }
+
+// Enhanced flatten function for viewports with user feedback
+async function flattenViewportImage(viewportNumber) {
+  const flattenBtn = document.getElementById(`flattenBtn${viewportNumber}`);
+  const data = viewportData[viewportNumber];
+  
+  if (!data) {
+    alert('No DICOM data loaded in this viewport.');
+    return;
+  }
+
+  try {
+    // Disable button and show loading state
+    flattenBtn.disabled = true;
+    flattenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Flattening...';
+    
+    // Show progress
+    showProgress(viewportNumber, 'Applying OCT flattening...', {
+      'Operation': 'OCT Flatten',
+      'Status': 'Processing'
+    });
+
+    console.log(`Flattening image for viewport ${viewportNumber}...`);
+    const flattenResponse = await fetch(`/api/flatten_dicom_image?dicom_file_path=${encodeURIComponent(data.dicom_file_path)}`);
+    
+    if (!flattenResponse.ok) {
+      const errorData = await flattenResponse.json().catch(() => ({}));
+      throw new Error(errorData.error || `Flattening failed: ${flattenResponse.statusText}`);
+    }
+    
+    const flattenedBlob = await flattenResponse.blob();
+    const flattenedUrl = URL.createObjectURL(flattenedBlob);
+    
+    // Cache flattened image URL
+    viewportData[viewportNumber].flattenedUrl = flattenedUrl;
+    
+    const img = document.getElementById(`viewportImage${viewportNumber}`);
+    img.onload = () => {
+      console.log(`Flattened image loaded successfully for viewport ${viewportNumber}`);
+      resetZoom(viewportNumber);
+      setupImageInteractions(viewportNumber);
+      hideProgress(viewportNumber);
+      
+      // Reset button state
+      flattenBtn.disabled = false;
+      flattenBtn.innerHTML = '<i class="fas fa-layer-group"></i> Flatten';
+    };
+    
+    img.src = flattenedUrl;
+    
+  } catch (error) {
+    console.error(`Error flattening image for viewport ${viewportNumber}:`, error);
+    hideProgress(viewportNumber);
+    
+    // Reset button state
+    flattenBtn.disabled = false;
+    flattenBtn.innerHTML = '<i class="fas fa-layer-group"></i> Flatten';
+    
+    alert(`Error flattening image: ${error.message}`);
+  }
+}
+    </script>
+</body>
+</html>
+<!-- This HTML file is the main entry point for the DICOM viewer application. It includes the necessary styles, scripts, and structure to display two viewports for DICOM images, allowing users to load files, zoom, pan, and flatten images. -->

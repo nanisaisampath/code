@@ -1,0 +1,5 @@
+pydicom==3.0.1
+numpy==2.1.1
+scipy==1.14.1
+oct-converter==0.6.2
+h5py==3.11.0

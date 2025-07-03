@@ -1,0 +1,3776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kodiak Retinal Image Viewer v0.1.0</title>
+
+  <!-- Add the Google Font link here -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #338dcc, #EAF3F9);
+      min-height: 100vh;
+    }
+  
+    header {
+      width: 100%;
+      background-color: #f5f5f5;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 2.5rem;
+    }
+  
+    /* Sidebar Styling */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      background-color: #0c2130;
+      overflow: hidden;
+      transition: width 0.3s ease;
+      z-index: 2;
+    }
+
+    .sidebar:hover {
+      width: 100px;
+    }
+
+    .sidebar nav {
+      margin-top: 20px;
+    }
+
+    .sidebar h2 {
+      color: white;
+      padding: 20px;
+      font-size: 1.4rem;
+      text-align: center;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 1;
+    }
+
+    .sidebar nav a {
+      padding: 10px 10px;
+      display: block;
+      color: white;
+      text-decoration: none;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sidebar:hover nav a {
+      opacity: 1;
+    }
+
+    .sidebar nav a:hover {
+      background-color: #338dcc;
+    }
+
+    /* Right Toolbar Styling */
+    .toolbar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 60px;
+      background-color: #0c2130;
+      overflow: hidden;
+      transition: width 0.3s ease;
+      z-index: 2;
+    }
+
+    .toolbar nav {
+      margin-top: 20px;
+    }
+
+    .toolbar:hover {
+      width: 100px;
+    }
+
+    .toolbar h2 {
+      color: white;
+      padding: 20px;
+      font-size: 1.25rem;
+      text-align: center;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 1;
+    }
+
+    .toolbar a {
+      padding: 10px 10px;
+      display: block;
+      color: white;
+      text-decoration: none;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .toolbar:hover a {
+      opacity: 1;
+    }
+
+    .toolbar a:hover {
+      background-color: #338dcc;
+    }
+
+    /* Main Content Adjustments */
+    .main-content {
+      margin-left: 60px;
+      margin-right: 60px;
+      display: flex;
+      width: calc(100% - 120px);
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* File Browser Layout */
+    .file-browser-container {
+      display: none;
+      width: 100%;
+      height: calc(100vh - 120px);
+      overflow: hidden; /* Prevent page-level overflow */
+    }
+
+    .file-browser-layout {
+      display: flex;
+      height: 100%;
+      gap: 20px;
+      min-height: 0; /* Allow flex shrinking */
+    }
+
+    /* Enhanced Tree View with Drill-down */
+.tree-panel {
+  width: 350px;
+  background-color: white;
+  border: 2px solid #0c2130;
+  border-radius: 8px;
+  padding: 15px;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.tree-panel h3 {
+  margin-top: 0;
+  color: #0c2130;
+  border-bottom: 2px solid #338dcc;
+  padding-bottom: 10px;
+}
+
+.tree-search {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Navigation Header */
+.tree-navigation {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #338dcc;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #e9ecef;
+}
+
+.back-button.visible {
+  display: flex;
+}
+
+.current-path {
+  font-size: 12px;
+  color: #666;
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* File Tree Container */
+.file-tree-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.file-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Tree Items */
+.tree-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  position: relative;
+  min-height: 36px;
+}
+
+.tree-item:hover {
+  background-color: #f0f8ff;
+  border-color: #e3f2fd;
+}
+
+.tree-item.selected {
+  background-color: #338dcc;
+  color: white;
+}
+
+.tree-item.loading {
+  background-color: #fff3cd;
+  border-color: #ffeaa7;
+}
+
+/* Tree Item Content */
+.tree-item-content {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.expand-arrow {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.expand-arrow.expanded {
+  transform: rotate(0deg);
+}
+
+.expand-arrow.collapsed {
+  transform: rotate(0deg);
+}
+
+.tree-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.folder-icon {
+  color: #ffd700;
+}
+
+.file-icon {
+  color: #666;
+}
+
+.tree-item-name {
+  flex: 1;
+  font-size: 14px;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+  line-height: 1.3;
+  padding: 2px 0;
+}
+
+.tree-item-info {
+  font-size: 11px;
+  color: #999;
+  margin-left: auto;
+}
+
+/* Enhanced Tooltip for Full File Names */
+.tree-item-tooltip {
+  position: absolute;
+  background-color: #2c3e50;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  pointer-events: none;
+  max-width: 400px;
+  word-break: break-all;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 10px;
+}
+
+.tree-item-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: #2c3e50;
+}
+
+.tree-item:hover .tree-item-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Adjust tooltip position if it would go off-screen */
+.tree-item-tooltip.tooltip-left {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: 10px;
+}
+
+.tree-item-tooltip.tooltip-left::before {
+  left: auto;
+  right: -6px;
+  border-right-color: transparent;
+  border-left-color: #2c3e50;
+}
+
+/* Loading and Error States */
+.tree-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.tree-error {
+  padding: 15px;
+  background-color: #ffebee;
+  border: 1px solid #f8bbd9;
+  border-radius: 4px;
+  color: #d32f2f;
+  text-align: center;
+}
+
+.tree-empty {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+    /* Viewport Panel */
+    /* Enhanced Viewport Panel with proper constraints */
+    .viewport-panel {
+      flex: 1;
+      background-color: white;
+      border: 2px solid #0c2130;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      min-width: 0; /* Allow flex shrinking */
+      min-height: 0; /* Allow flex shrinking */
+    }
+
+    .viewport-panel h3 {
+      margin-top: 0;
+      color: #0c2130;
+      border-bottom: 2px solid #338dcc;
+      padding-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Layout Toggle Button */
+    .layout-toggle {
+      background-color: #338dcc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.3s ease;
+    }
+
+    .layout-toggle:hover {
+      background-color: #0c2130;
+    }
+
+    /* Viewports Container with proper flex constraints */
+    .viewports-container {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      min-height: 0; /* Critical for flex children */
+      overflow: hidden; /* Prevent container overflow */
+    }
+
+    .viewports-container.stacked {
+      flex-direction: column;
+    }
+
+    /* Individual Viewport with strict boundaries */
+    .viewport {
+      flex: 1;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      background-color: #f9f9f9;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      min-width: 0; /* Allow shrinking */
+      min-height: 0; /* Allow shrinking */
+      box-sizing: border-box;
+      overflow: hidden; /* Prevent viewport overflow */
+    }
+
+    .viewport h4 {
+      margin-top: 0;
+      text-align: center;
+      color: #0c2130;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+
+    /* Viewport Content with strict size constraints */
+    .viewport-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      max-height: 600px; /* Prevent excessive height */
+      background-color: white;
+      border: 1px dashed #ccc;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden; /* Critical: prevent content overflow */
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Enhanced Image Constraints */
+    .viewport-image {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain; /* Maintain aspect ratio */
+      cursor: grab;
+      transition: transform 0.1s ease;
+      transform-origin: center center;
+      position: relative;
+      display: block;
+      box-sizing: border-box;
+    }
+
+    .viewport-image:active {
+      cursor: grabbing;
+    }
+
+    .viewport-placeholder {
+      color: #666;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .zoom-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .zoom-btn {
+      padding: 5px 10px;
+      background-color: #338dcc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .zoom-btn:hover {
+      background-color: #0c2130;
+    }
+
+    .zoom-level {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* Context Menu */
+    .context-menu {
+      position: absolute;
+      display: none;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      min-width: 160px;
+      padding: 5px 0;
+    }
+
+    .context-menu-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+    }
+
+    .context-menu-item:hover {
+      background-color: #f0f8ff;
+    }
+
+    .context-menu-icon {
+      margin-right: 8px;
+      width: 16px;
+    }
+
+    /* Loading Spinner */
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #338dcc;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Enhanced Progress Overlay with Shadow Image Effect */
+.progress-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.98));
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+  border-radius: 4px;
+}
+
+.progress-overlay.active {
+  display: flex;
+}
+
+.progress-overlay::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 60%;
+  background: linear-gradient(45deg, 
+    rgba(51, 141, 204, 0.1) 0%, 
+    rgba(51, 141, 204, 0.05) 25%, 
+    rgba(12, 33, 48, 0.1) 50%, 
+    rgba(51, 141, 204, 0.05) 75%, 
+    rgba(51, 141, 204, 0.1) 100%);
+  border-radius: 8px;
+  animation: shadowPulse 2s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes shadowPulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.95); }
+  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.progress-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  z-index: 2;
+  text-align: center;
+  max-width: 90%;
+}
+
+.progress-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.progress-ring {
+  width: 80px;
+  height: 80px;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: #e6e6e6;
+  stroke-width: 6;
+}
+
+.progress-ring-fill {
+  fill: none;
+  stroke: #338dcc;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 226;
+  stroke-dashoffset: 226;
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
+  font-weight: bold;
+  color: #0c2130;
+}
+
+.progress-text {
+  color: #0c2130;
+  font-weight: 500;
+  font-size: 14px;
+  margin: 0;
+}
+
+.progress-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.metadata-tag {
+  background: linear-gradient(135deg, #338dcc, #0c2130);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: tagFadeIn 0.5s ease-out;
+}
+
+@keyframes tagFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.progress-steps {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.progress-step {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e6e6e6;
+  transition: all 0.3s ease;
+}
+
+.progress-step.active {
+  background-color: #338dcc;
+  transform: scale(1.2);
+}
+
+.progress-step.completed {
+  background-color: #28a745;
+}
+
+/* Cancel Button Styling */
+.cancel-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 15px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cancel-button:hover {
+  background-color: #c82333;
+}
+
+.cancel-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+    /* Error message styling */
+    .error-message {
+      color: #d32f2f;
+      background-color: #ffebee;
+      border: 1px solid #f8bbd9;
+      border-radius: 4px;
+      padding: 10px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .retry-button {
+      background-color: #338dcc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .retry-button:hover {
+      background-color: #0c2130;
+    }
+
+    /* Frame slider styling */
+    .frame-slider-container {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .frame-slider-container.active {
+      display: block;
+    }
+
+    .frame-slider {
+      width: 100%;
+      margin: 5px 0;
+    }
+
+    .frame-info {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    /* Original viewport containers for DICOM view */
+    .viewport-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid #0c2130;
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: transparent;
+      width: calc(100% - 40px);
+      max-width: 900px;
+      box-sizing: border-box;
+      position: relative;
+    }
+  
+    .viewport-container h2 {
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .progress-container {
+      width: 100%;
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      margin: 20px 0;
+      position: relative;
+      height: 20px;
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, #338dcc, #0c2130);
+      height: 100%;
+      width: 0;
+      border-radius: 5px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      line-height: 20px;
+    }
+  
+    .dicom-prompt {
+      padding: 50px;
+      border: 2px dashed #0c2130;
+      text-align: center;
+      color: #0c2130;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+  
+    .horizontal-line {
+      width: 100%;
+      height: 2px;
+      background-color: #ccc;
+      margin: 20px 0;
+    }
+  
+    .viewport-image-original {
+      display: none;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      margin-top: 15px;
+    }
+    
+    .slider-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 5px;
+      width: 100%;
+    }
+  
+    .slider-section p, .slider-section label {
+      display: block;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    input[type="range"] {
+      width: 15%;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #bindSlidersContainer {
+      margin-top: 20px;
+      text-align: center;
+      width: 100%;
+    }
+
+    footer {
+      width: 100%;
+      color: black;
+      text-align: center;
+      padding: 5px;
+      font-size: 12px;
+      position: fixed;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .performance-monitor {
+      font-size: 11px;
+      color: #666;
+      margin-left: 20px;
+    }
+  
+    /* Responsive Layout Adjustments */
+    @media (max-width: 1200px) {
+      .viewports-container:not(.stacked) {
+        flex-direction: column;
+      }
+      
+      .viewport-content {
+        min-height: 250px;
+        max-height: 400px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .viewport-container {
+        width: 100%;
+        padding: 10px;
+      }
+  
+      .toolbar,
+      .sidebar {
+        display: none;
+      }
+  
+      .main-content {
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
+        padding: 10px;
+      }
+
+      .file-browser-layout {
+        flex-direction: column;
+      }
+
+      .tree-panel {
+        width: 100%;
+        height: 300px;
+      }
+
+      .viewports-container {
+        flex-direction: column;
+      }
+      
+      .viewport-content {
+        min-height: 200px;
+        max-height: 300px;
+      }
+    }
+
+/* S3 Credentials Modal */
+.s3-credentials-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.s3-credentials-form {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.s3-credentials-form h2 {
+  color: #0c2130;
+  margin-bottom: 20px;
+  text-align: center;
+  border-bottom: 2px solid #338dcc;
+  padding-bottom: 10px;
+}
+
+.s3-form-group {
+  margin-bottom: 20px;
+}
+
+.s3-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #0c2130;
+}
+
+.s3-form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.s3-form-group input:focus {
+  outline: none;
+  border-color: #338dcc;
+  box-shadow: 0 0 5px rgba(51, 141, 204, 0.3);
+}
+
+.s3-form-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.s3-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.s3-btn-primary {
+  background-color: #338dcc;
+  color: white;
+}
+
+.s3-btn-primary:hover {
+  background-color: #0c2130;
+}
+
+.s3-btn-secondary {
+  background-color: #ccc;
+  color: #333;
+}
+
+.s3-btn-secondary:hover {
+  background-color: #bbb;
+}
+
+.s3-form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.s3-form-checkbox input[type="checkbox"] {
+  width: auto;
+}
+
+.s3-error-message {
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #f8bbd9;
+}
+
+.s3-success-message {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  border: 1px solid #c8e6c9;
+}
+
+.s3-loading {
+  text-align: center;
+  padding: 20px;
+}
+
+.s3-loading .loader {
+  margin: 0 auto;
+}
+
+/* DICOM Viewports Container */
+.dicom-viewports-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.dicom-viewports-container.side-by-side {
+  flex-direction: row;
+  gap: 20px;
+}
+
+.dicom-viewports-container.side-by-side .viewport-container {
+  flex: 1;
+  width: calc(50% - 10px);
+}
+
+.dicom-viewports-container.side-by-side .horizontal-line {
+  display: none;
+}
+
+.dicom-viewports-container.stacked {
+  flex-direction: column;
+}
+
+.dicom-viewports-container.stacked .viewport-container {
+  width: calc(100% - 40px);
+}
+
+.dicom-viewports-container.stacked .horizontal-line {
+  display: block;
+}
+.custom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 10px 20px;
+  color: white;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* This pulls the left logo a little to the right */
+.left-logo {
+  margin-left: 90px;
+}
+
+/* This pulls the right logo a little to the left */
+.right-logo {
+  margin-right: 125px;
+}
+
+.header-title {
+  flex-grow: 1;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: #000000;
+}
+
+.tree-search {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.context-menu {
+  position: absolute;
+  display: none;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  min-width: 160px;
+  padding: 5px 0;
+}
+
+
+
+  </style>
+</head>
+<body>
+  <!-- Header -->
+   <header class="custom-header">
+      <img src="static/itsoli-logo-color-full-positive.jpg" alt="Left Logo" class="header-logo left-logo">
+      <span class="header-title">Retinal Image Viewer and File Processor</span>
+      <img src="static/Kodiak_logo - high res.jpg" alt="Right Logo" class="header-logo right-logo">
+   </header>
+
+
+  <!-- Left Sidebar Navigation -->
+  <div class="sidebar">
+    <h2><i class="fas fa-bars"></i></h2>
+    <nav>
+      <a href="#" id="fileNav" onclick="toggleFileFrame()">Browse</a>
+      <a href="#">Edit</a>
+      <a href="#">Help</a>
+    </nav>
+  </div>
+
+  <!-- Right Toolbar -->
+  <div class="toolbar">
+    <h2><i class="fas fa-tools"></i></h2>
+    <nav>
+      <a href="#">Lock Scroll</a>
+      <a href="#" id="e2eToDicomConverter">E2E to DICOM Converter</a>
+      <a href="#" id="dicomMetadataExtractorTool">DICOM Metadata & Pixel Extractor</a>
+      <a href="#">Other Tool 2</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <!-- DICOM View Section -->
+    <div id="dicomView" style="display: none; width: 100%; flex-direction: column; justify-content: center; align-items: flex-start;">
+      <div id="bindSlidersContainer" style="display:none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div>
+            <input type="checkbox" id="bindSliders" />
+            <label for="bindSliders">Bind Sliders</label>
+          </div>
+          <button class="layout-toggle" onclick="toggleDicomViewportLayout()">
+            <i class="fas fa-columns" id="dicomLayoutIcon"></i>
+            <span id="dicomLayoutText">Switch to Stacked</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dicom-viewports-container" id="dicomViewportsContainer">
+        <div class="viewport-container">
+          <h2 id="viewportTitle1_s3">Viewport 1</h2>
+          <div class="dicom-prompt" id="dicomPrompt1_s3" onclick="document.getElementById('dicomFile1_s3').click();">
+            Click to upload a DICOM file for Viewport 1
+          </div>
+          <input type="file" id="dicomFile1_s3" style="display:none;" onchange="uploadDICOM(1)">
+          <img id="viewportImage1_s3" class="viewport-image-original" alt="DICOM Viewport 1" data-dicom-file-path="">
+          <div class="loader" id="loaderViewport1_s3"></div>
+          <div class="slider-section" id="sliderSection1_s3" style="display:none;">
+            <label for="frameSlider1_s3">Select Frame</label>
+            <input type="range" id="frameSlider1_s3" min="0" max="100" value="0">
+            <p id="frameNumber1_s3">Current Frame: 1 of X</p>
+          </div>
+        </div>
+
+        <div class="horizontal-line"></div>
+
+        <div class="viewport-container">
+          <h2 id="viewportTitle2_s3">Viewport 2</h2>
+          <div class="dicom-prompt" id="dicomPrompt2_s3" onclick="document.getElementById('dicomFile2_s3').click();">
+            Click to upload a DICOM file for Viewport 2
+          </div>
+          <input type="file" id="dicomFile2_s3" style="display:none;" onchange="uploadDICOM(2)">
+          <img id="viewportImage2_s3" class="viewport-image-original" alt="DICOM Viewport 2" data-dicom-file-path="">
+          <div class="loader" id="loaderViewport2_s3"></div>
+          <div class="slider-section" id="sliderSection2_s3" style="display:none;">
+            <label for="frameSlider2_s3">Select Frame</label>
+            <input type="range" id="frameSlider2_s3" min="0" max="100" value="0">
+            <p id="frameNumber2_s3">Current Frame: 1 of X</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S3 File Browser Section -->
+    <div id="fileBrowserContainer" class="file-browser-container">
+      <div class="file-browser-layout">
+        <!-- Left Panel: S3 Tree Explorer -->
+<div class="tree-panel">
+  <h3><i class="fas fa-folder-tree"></i> S3 File Browser</h3>
+  
+  <!-- Navigation -->
+  <div class="tree-navigation">
+    <button id="backButton" class="back-button" onclick="s3Browser.goBack()">
+      <i class="fas fa-arrow-left"></i>
+      Back
+    </button>
+    <span id="currentPath" class="current-path">Root</span>
+  </div>
+  
+  <!-- Search -->
+  <input type="text" id="treeSearchInput" class="tree-search" placeholder="Search current folder...">
+  <select id="extensionFilter" class="tree-search">
+      <option value="">All File Types</option>
+      <option value=".dcm">.dcm</option>
+      <option value=".dicom">.dicom</option>
+      <option value=".e2e">.e2e</option>
+      <option value=".fds">.fds</option>
+      <option value=".fda">.fda</option>
+  </select>
+
+  <!-- Tree Container -->
+  <div id="fileTreeContainer" class="file-tree-container">
+    <div class="tree-loading">
+      <div class="loader"></div>
+      <span style="margin-left: 10px;">Initializing...</span>
+    </div>
+  </div>
+</div>
+
+        <!-- Right Panel: Dual Viewports -->
+        <div class="viewport-panel">
+          <h3>
+            <span><i class="fas fa-images"></i> Image Viewports</span>
+            <button class="layout-toggle" onclick="toggleViewportLayout()">
+              <i class="fas fa-columns" id="layoutIcon"></i>
+              <span id="layoutText">Switch to Stacked</span>
+            </button>
+          </h3>
+          <div class="viewports-container" id="viewportsContainer">
+            <!-- Viewport 1 -->
+            <div class="viewport" id="viewport1">
+              <h4>Viewport 1</h4>
+              <div class="viewport-content" id="viewportContent1">
+                <div class="viewport-placeholder">Right-click a DICOM file to load here</div>
+                <img id="viewportImage1" class="viewport-image" style="display: none;" alt="DICOM Image 1">
+                <!-- Enhanced Progress Overlay for Viewport 1 -->
+<div class="progress-overlay" id="progressOverlay1">
+  <div class="progress-content">
+    <div class="progress-circle">
+      <svg class="progress-ring">
+        <circle class="progress-ring-bg" cx="40" cy="40" r="36"></circle>
+        <circle class="progress-ring-fill" id="progressRing1" cx="40" cy="40" r="36"></circle>
+      </svg>
+      <div class="progress-percentage" id="progressPercentage1">0%</div>
+    </div>
+    <div class="progress-text" id="progressText1">Initializing...</div>
+    <div class="progress-metadata" id="progressMetadata1"></div>
+    <div class="progress-steps" id="progressSteps1">
+      <div class="progress-step" id="step1_1"></div>
+      <div class="progress-step" id="step2_1"></div>
+      <div class="progress-step" id="step3_1"></div>
+      <div class="progress-step" id="step4_1"></div>
+      <div class="progress-step" id="step5_1"></div>
+    </div>
+    <!-- Cancel Button for Viewport 1 -->
+    <button class="cancel-button" id="cancelButton1" onclick="cancelOperation(1)" style="display: none;">
+      <i class="fas fa-times"></i>
+      Cancel Download
+    </button>
+  </div>
+</div>
+                <div id="error1" class="error-message" style="display: none;"></div>
+              </div>
+              <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomViewport(1, 0.8)">-</button>
+                <div class="zoom-level" id="zoomLevel1">100%</div>
+                <button class="zoom-btn" onclick="zoomViewport(1, 1.25)">+</button>
+                <button class="zoom-btn" onclick="resetZoom(1)">Reset</button>
+              </div>
+              <!-- Frame slider for Viewport 1 -->
+              <div class="frame-slider-container" id="frameSliderContainer1">
+                <label for="frameSlider1">Frame:</label>
+                <input type="range" id="frameSlider1" class="frame-slider" min="0" max="0" value="0">
+                <div class="frame-info" id="frameInfo1">Frame 1 of 1</div>
+              </div>
+            </div>
+
+            <!-- Viewport 2 -->
+            <div class="viewport" id="viewport2">
+              <h4>Viewport 2</h4>
+              <div class="viewport-content" id="viewportContent2">
+                <div class="viewport-placeholder">Right-click a DICOM file to load here</div>
+                <img id="viewportImage2" class="viewport-image" style="display: none;" alt="DICOM Image 2">
+                <!-- Enhanced Progress Overlay for Viewport 2 -->
+<div class="progress-overlay" id="progressOverlay2">
+  <div class="progress-content">
+    <div class="progress-circle">
+      <svg class="progress-ring">
+        <circle class="progress-ring-bg" cx="40" cy="40" r="36"></circle>
+        <circle class="progress-ring-fill" id="progressRing2" cx="40" cy="40" r="36"></circle>
+      </svg>
+      <div class="progress-percentage" id="progressPercentage2">0%</div>
+    </div>
+    <div class="progress-text" id="progressText2">Initializing...</div>
+    <div class="progress-metadata" id="progressMetadata2"></div>
+    <div class="progress-steps" id="progressSteps2">
+      <div class="progress-step" id="step1_2"></div>
+      <div class="progress-step" id="step2_2"></div>
+      <div class="progress-step" id="step3_2"></div>
+      <div class="progress-step" id="step4_2"></div>
+      <div class="progress-step" id="step5_2"></div>
+    </div>
+    <!-- Cancel Button for Viewport 2 -->
+    <button class="cancel-button" id="cancelButton2" onclick="cancelOperation(2)" style="display: none;">
+      <i class="fas fa-times"></i>
+      Cancel Download
+    </button>
+  </div>
+</div>
+                <div id="error2" class="error-message" style="display: none;"></div>
+              </div>
+              <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomViewport(2, 0.8)">-</button>
+                <div class="zoom-level" id="zoomLevel2">100%</div>
+                <button class="zoom-btn" onclick="zoomViewport(2, 1.25)">+</button>
+                <button class="zoom-btn" onclick="resetZoom(2)">Reset</button>
+              </div>
+              <!-- Frame slider for Viewport 2 -->
+              <div class="frame-slider-container" id="frameSliderContainer2">
+                <label for="frameSlider2">Frame:</label>
+                <input type="range" id="frameSlider2" class="frame-slider" min="0" max="0" value="0">
+                <div class="frame-info" id="frameInfo2">Frame 1 of 1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="contextMenu" class="context-menu">
+    <div class="context-menu-item" onclick="loadIntoViewport(1)">
+      <i class="fas fa-eye context-menu-icon"></i>
+      View in Viewport 1
+    </div>
+    <div class="context-menu-item" onclick="loadIntoViewport(2)">
+      <i class="fas fa-eye context-menu-icon"></i>
+      View in Viewport 2
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2024 Kodiak Sciences Inc - All Rights Reserved.</span>
+    <div class="performance-monitor" id="performanceMonitor">
+      Performance: Ready
+    </div>
+  </footer>
+
+<!-- S3 Credentials Modal -->
+<div id="s3CredentialsModal" class="s3-credentials-modal">
+  <div class="s3-credentials-form">
+    <h2><i class="fas fa-cloud"></i> AWS S3 Configuration</h2>
+    
+    <div id="s3ErrorMessage" class="s3-error-message" style="display: none;"></div>
+    <div id="s3SuccessMessage" class="s3-success-message" style="display: none;"></div>
+    
+    <div id="s3LoadingState" class="s3-loading" style="display: none;">
+      <div class="loader"></div>
+      <p>Testing credentials...</p>
+    </div>
+    
+    <div id="s3FormContent">
+      <p style="color: #666; margin-bottom: 20px; text-align: center;">
+        Please enter your AWS S3 credentials to access the file browser.
+      </p>
+      
+      <div class="s3-form-group">
+        <label for="s3AccessKey">AWS Access Key ID:</label>
+        <input type="text" id="s3AccessKey" placeholder="AKIA..." required>
+      </div>
+      
+      <div class="s3-form-group">
+        <label for="s3SecretKey">AWS Secret Access Key:</label>
+        <input type="password" id="s3SecretKey" placeholder="Enter secret key" required>
+      </div>
+      
+      <div class="s3-form-group">
+        <label for="s3Region">AWS Region:</label>
+        <input type="text" id="s3Region" placeholder="us-east-1" value="us-east-1" required>
+      </div>
+      
+      <div class="s3-form-group">
+        <label for="s3Bucket">S3 Bucket Name:</label>
+        <input type="text" id="s3Bucket" placeholder="my-dicom-bucket" required>
+      </div>
+      
+      <div class="s3-form-checkbox">
+        <input type="checkbox" id="s3SaveToEnv">
+        <label for="s3SaveToEnv">Save credentials to .env file (recommended)</label>
+      </div>
+      
+      <div class="s3-form-buttons">
+        <button type="button" class="s3-btn s3-btn-secondary" onclick="closeS3Modal()">Cancel</button>
+        <button type="button" class="s3-btn s3-btn-primary" onclick="submitS3Credentials()">Connect</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script>
+    // Global variables
+    let selectedFilePath = null;
+    let selectedTreeItem = null;
+    let viewportZoom = { 1: 1, 2: 1 };
+    let viewportPan = { 1: { x: 0, y: 0 }, 2: { x: 0, y: 0 } };
+    let isDragging = { 1: false, 2: false };
+    let lastMousePos = { 1: { x: 0, y: 0 }, 2: { x: 0, y: 0 } };
+    let viewportData = { 1: null, 2: null };
+    let s3TreeData = null;
+    let currentFrames = { 1: 0, 2: 0 };
+    let totalFrames = { 1: 1, 2: 1 };
+    let s3StatusChecked = false;
+    let s3ConfiguredStatus = null;
+    let isStackedLayout = false;
+    
+    // Global variables for layout states
+    let isDicomStackedLayout = true; // Default to stacked for DICOM view
+    
+    // Performance monitoring
+    let performanceTimers = { 1: null, 2: null };
+
+    // Active downloads tracking for cancellation
+    let activeDownloads = new Map();
+    let abortControllers = new Map();
+
+    // Define custom sort order for tree structure
+    const SORT_ORDER = [
+      'SCR', 'Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7',
+      'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 
+      'Week 8', 'Week 9', 'Week 10', 'Week 11', 'Week 12'
+    ];
+
+    // Tree structure sorting functions
+    function extractSortKey(itemName) {
+      if (!itemName) return "";
+      
+      const itemUpper = itemName.toUpperCase();
+      
+      // Check for SCR
+      if (itemUpper.includes('SCR')) {
+        return 'SCR';
+      }
+      
+      // Check for Day patterns
+      const dayMatch = itemUpper.match(/DAY\s*(\d+)/);
+      if (dayMatch) {
+        const dayNum = parseInt(dayMatch[1]);
+        return `Day ${dayNum}`;
+      }
+      
+      // Check for Week patterns
+      const weekMatch = itemUpper.match(/WEEK\s*(\d+)/);
+      if (weekMatch) {
+        const weekNum = parseInt(weekMatch[1]);
+        return `Week ${weekMatch[1]}`;
+      }
+      
+      return itemName;
+    }
+
+    function customSortKey(item) {
+      const name = item && item.name ? item.name : String(item);
+      const sortKey = extractSortKey(name);
+      
+      // Get position in sort order
+      try {
+        const position = SORT_ORDER.indexOf(sortKey);
+        return position !== -1 ? [0, position, sortKey] : [1, 0, sortKey.toLowerCase()];
+      } catch (error) {
+        return [1, 0, sortKey.toLowerCase()];
+      }
+    }
+
+    function sortTreeStructure(items) {
+      try {
+        // Separate folders and files
+        const folders = items.filter(item => item.type === 'folder');
+        const files = items.filter(item => item.type !== 'folder');
+        
+        // Sort folders and files separately
+        const foldersSorted = folders.sort((a, b) => {
+          const aKey = customSortKey(a);
+          const bKey = customSortKey(b);
+          
+          // Compare arrays element by element
+          for (let i = 0; i < Math.max(aKey.length, bKey.length); i++) {
+            if (aKey[i] === undefined) return -1;
+            if (bKey[i] === undefined) return 1;
+            if (aKey[i] !== bKey[i]) {
+              return typeof aKey[i] === 'string' ? aKey[i].localeCompare(bKey[i]) : aKey[i] - bKey[i];
+            }
+          }
+          return 0;
+        });
+        
+        const filesSorted = files.sort((a, b) => {
+          const aKey = customSortKey(a);
+          const bKey = customSortKey(b);
+          
+          // Compare arrays element by element
+          for (let i = 0; i < Math.max(aKey.length, bKey.length); i++) {
+            if (aKey[i] === undefined) return -1;
+            if (bKey[i] === undefined) return 1;
+            if (aKey[i] !== bKey[i]) {
+              return typeof aKey[i] === 'string' ? aKey[i].localeCompare(bKey[i]) : aKey[i] - bKey[i];
+            }
+          }
+          return 0;
+        });
+        
+        // Recursively sort subfolders
+        foldersSorted.forEach(folder => {
+          if (folder.children && folder.children.length > 0) {
+            folder.children = sortTreeStructure(folder.children);
+          }
+        });
+        
+        // Return folders first, then files
+        return [...foldersSorted, ...filesSorted];
+        
+      } catch (error) {
+        console.error('Error sorting tree structure:', error);
+        return items;
+      }
+    }
+
+    // CRC-based Image Cache System
+    class CRCImageCache {
+      constructor() {
+        this.cache = new Map();
+        this.maxCacheSize = 100; // Maximum number of cached images
+        this.cacheStats = {
+          hits: 0,
+          misses: 0,
+          evictions: 0
+        };
+      }
+
+      // Calculate CRC32 for a given string/buffer
+      calculateCRC32(data) {
+        const crcTable = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+          let c = i;
+          for (let j = 0; j < 8; j++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          }
+          crcTable[i] = c;
+        }
+
+        let crc = 0 ^ (-1);
+        const bytes = new TextEncoder().encode(data);
+        for (let i = 0; i < bytes.length; i++) {
+          crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xFF];
+        }
+        return ((crc ^ (-1)) >>> 0).toString(16).padStart(8, '0');
+      }
+
+      // Generate cache key from file path and metadata
+      generateCacheKey(filePath, metadata = {}) {
+        const keyData = JSON.stringify({
+          path: filePath,
+          size: metadata.size || 0,
+          lastModified: metadata.lastModified || '',
+          frame: metadata.frame || 0
+        });
+        return this.calculateCRC32(keyData);
+      }
+
+      // Check if image exists in cache
+      has(cacheKey) {
+        return this.cache.has(cacheKey);
+      }
+
+      // Get image from cache
+      get(cacheKey) {
+        if (this.cache.has(cacheKey)) {
+          const item = this.cache.get(cacheKey);
+          // Update access time for LRU
+          item.lastAccessed = Date.now();
+          this.cacheStats.hits++;
+          console.log(`[CACHE HIT] Key: ${cacheKey}`);
+          return item;
+        }
+        this.cacheStats.misses++;
+        console.log(`[CACHE MISS] Key: ${cacheKey}`);
+        return null;
+      }
+
+      // Store image in cache
+      set(cacheKey, imageData, metadata = {}) {
+        // Evict oldest items if cache is full
+        if (this.cache.size >= this.maxCacheSize) {
+          this.evictOldest();
+        }
+
+        const cacheItem = {
+          imageData: imageData,
+          metadata: metadata,
+          cachedAt: Date.now(),
+          lastAccessed: Date.now(),
+          cacheKey: cacheKey
+        };
+
+        this.cache.set(cacheKey, cacheItem);
+        console.log(`[CACHE SET] Key: ${cacheKey}, Size: ${this.cache.size}`);
+      }
+
+      // Evict oldest cache entry
+      evictOldest() {
+        let oldestKey = null;
+        let oldestTime = Date.now();
+
+        for (const [key, item] of this.cache.entries()) {
+          if (item.lastAccessed < oldestTime) {
+            oldestTime = item.lastAccessed;
+            oldestKey = key;
+          }
+        }
+
+        if (oldestKey) {
+          this.cache.delete(oldestKey);
+          this.cacheStats.evictions++;
+          console.log(`[CACHE EVICT] Key: ${oldestKey}`);
+        }
+      }
+
+      // Get cache statistics
+      getStats() {
+        return {
+          ...this.cacheStats,
+          size: this.cache.size,
+          maxSize: this.maxCacheSize,
+          hitRate: this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) || 0
+        };
+      }
+
+      // Clear cache
+      clear() {
+        this.cache.clear();
+        this.cacheStats = { hits: 0, misses: 0, evictions: 0 };
+        console.log('[CACHE CLEAR] Cache cleared');
+      }
+    }
+
+    // Initialize global cache instance
+    const imageCache = new CRCImageCache();
+
+    // Enhanced image loading with CRC-based caching and OCT flattening priority
+async function loadImageWithCRC(filePath, metadata = {}) {
+  try {
+    // For OCT images, check for flattened version first
+    if (metadata.isOCT || filePath.toLowerCase().includes('oct')) {
+      const flattenMetadata = {
+        path: filePath,
+        flattened: true,
+        frame: metadata.frame || 0
+      };
+      
+      const flattenCacheKey = imageCache.generateCacheKey(filePath + '_flattened', flattenMetadata);
+      const cachedFlattened = imageCache.get(flattenCacheKey);
+      
+      if (cachedFlattened) {
+        console.log(`[OCT CACHE] Using cached flattened image for ${filePath}`);
+        return {
+          imageData: cachedFlattened.imageData,
+          source: 'cache_flattened',
+          cacheKey: flattenCacheKey,
+          metadata: cachedFlattened.metadata
+        };
+      }
+    }
+    
+    // Step 1: Generate CRC-based cache key for original image
+    const cacheKey = imageCache.generateCacheKey(filePath, metadata);
+    console.log(`[CRC CACHE] Generated key: ${cacheKey} for ${filePath}`);
+
+    // Step 2: Check local cache for original image (only for non-OCT)
+    if (!metadata.isOCT && !filePath.toLowerCase().includes('oct')) {
+      const cachedItem = imageCache.get(cacheKey);
+      if (cachedItem) {
+        console.log(`[CRC CACHE] Using cached image for ${filePath}`);
+        return {
+          imageData: cachedItem.imageData,
+          source: 'cache',
+          cacheKey: cacheKey,
+          metadata: cachedItem.metadata
+        };
+      }
+    }
+
+    // Continue with rest of the function...
+    // (Keep the existing backend CRC check and download logic)
+        // Step 3: Check if backend has CRC info
+        let backendCRC = null;
+        try {
+          const crcResponse = await fetch(`/api/get-file-crc?path=${encodeURIComponent(filePath)}`);
+          if (crcResponse.ok) {
+            const crcData = await crcResponse.json();
+            backendCRC = crcData.crc;
+            
+            // If backend CRC differs from our calculated CRC, use backend CRC
+            if (backendCRC && backendCRC !== cacheKey) {
+              const backendCachedItem = imageCache.get(backendCRC);
+              if (backendCachedItem) {
+                console.log(`[CRC CACHE] Using backend CRC cached image: ${backendCRC}`);
+                return {
+                  imageData: backendCachedItem.imageData,
+                  source: 'cache_backend_crc',
+                  cacheKey: backendCRC,
+                  metadata: backendCachedItem.metadata
+                };
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`[CRC CACHE] Could not get backend CRC: ${error.message}`);
+        }
+
+        // Step 4: Download image with CRC query parameter for HTTP caching
+        const finalCacheKey = backendCRC || cacheKey;
+        const imageUrl = `/api/view_dicom_png?frame=${metadata.frame || 0}&dicom_file_path=${encodeURIComponent(metadata.dicomFilePath || filePath)}&v=${finalCacheKey}`;
+        
+        console.log(`[CRC CACHE] Downloading image with CRC: ${finalCacheKey}`);
+        const response = await fetch(imageUrl, {
+          headers: {
+            'Cache-Control': 'public, max-age=31536000, immutable'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const imageBlob = await response.blob();
+        const imageUrl_cached = URL.createObjectURL(imageBlob);
+
+        // Step 5: Store in cache
+        const cacheMetadata = {
+          ...metadata,
+          downloadedAt: Date.now(),
+          contentType: response.headers.get('content-type'),
+          size: imageBlob.size
+        };
+
+        imageCache.set(finalCacheKey, imageUrl_cached, cacheMetadata);
+
+        return {
+          imageData: imageUrl_cached,
+          source: 'download',
+          cacheKey: finalCacheKey,
+          metadata: cacheMetadata
+        };
+
+      } catch (error) {
+        console.error(`[CRC CACHE] Error loading image: ${error.message}`);
+        throw error;
+      }
+    }
+
+    // Auto image display logic - determine if DICOM is OCT
+    // Enhanced OCT detection
+function isOCTDicom(dicomData) {
+  if (!dicomData) return false;
+  
+  // Check filename patterns
+  if (dicomData.s3_key) {
+    const filename = dicomData.s3_key.toLowerCase();
+    if (filename.includes('oct') || filename.includes('optical')) {
+      return true;
+    }
+  }
+  
+  // Check if it's multi-frame (common for OCT)
+  if (dicomData.number_of_frames && dicomData.number_of_frames > 1) {
+    return true;
+  }
+  
+  return false;
+}
+
+    // Performance monitoring functions
+    function startPerformanceTimer(viewportNumber, operation) {
+      performanceTimers[viewportNumber] = {
+        start: performance.now(),
+        operation: operation
+      };
+      updatePerformanceDisplay(`${operation} started...`);
+    }
+
+    function endPerformanceTimer(viewportNumber, operation) {
+      if (performanceTimers[viewportNumber]) {
+        const elapsed = performance.now() - performanceTimers[viewportNumber].start;
+        const elapsedSeconds = (elapsed / 1000).toFixed(2);
+        updatePerformanceDisplay(`${operation} completed in ${elapsedSeconds}s`);
+        
+        // Log to console for debugging
+        console.log(`[PERFORMANCE] Viewport ${viewportNumber} - ${operation}: ${elapsedSeconds}s`);
+        
+        // Warn if over 7 seconds
+        if (elapsed > 7000) {
+          console.warn(`[PERFORMANCE WARNING] Operation took ${elapsedSeconds}s (target: <7s)`);
+        }
+        
+        performanceTimers[viewportNumber] = null;
+      }
+    }
+
+    function updatePerformanceDisplay(message) {
+      const monitor = document.getElementById('performanceMonitor');
+      if (monitor) {
+        monitor.textContent = `Performance: ${message}`;
+      }
+    }
+
+    // DICOM Layout toggle functionality
+    function toggleDicomViewportLayout() {
+      const container = document.getElementById('dicomViewportsContainer');
+      const icon = document.getElementById('dicomLayoutIcon');
+      const text = document.getElementById('dicomLayoutText');
+      
+      isDicomStackedLayout = !isDicomStackedLayout;
+      
+      if (isDicomStackedLayout) {
+        container.classList.remove('side-by-side');
+        container.classList.add('stacked');
+        icon.className = 'fas fa-columns';
+        text.textContent = 'Switch to Side-by-Side';
+      } else {
+        container.classList.remove('stacked');
+        container.classList.add('side-by-side');
+        icon.className = 'fas fa-grip-lines';
+        text.textContent = 'Switch to Stacked';
+      }
+      
+      console.log(`DICOM viewport layout changed to: ${isDicomStackedLayout ? 'stacked' : 'side-by-side'}`);
+    }
+
+    // Update the existing S3 layout toggle to be more specific
+    function toggleViewportLayout() {
+      const container = document.getElementById('viewportsContainer');
+      const icon = document.getElementById('layoutIcon');
+      const text = document.getElementById('layoutText');
+      
+      isStackedLayout = !isStackedLayout;
+      
+      if (isStackedLayout) {
+        container.classList.add('stacked');
+        icon.className = 'fas fa-grip-lines';
+        text.textContent = 'Switch to Side-by-Side';
+      } else {
+        container.classList.remove('stacked');
+        icon.className = 'fas fa-columns';
+        text.textContent = 'Switch to Stacked';
+      }
+      
+      console.log(`S3 viewport layout changed to: ${isStackedLayout ? 'stacked' : 'side-by-side'}`);
+    }
+
+// Enhanced Progress Management with Cancel Support
+class ProgressManager {
+  constructor(viewportNumber) {
+    this.viewportNumber = viewportNumber;
+    this.currentStep = 0;
+    this.totalSteps = 5;
+    this.percentage = 0;
+    this.metadata = {};
+    this.abortController = null;
+    this.operationId = null;
+  }
+
+  show(message = 'Loading...', metadata = {}, operationId = null) {
+    const overlay = document.getElementById(`progressOverlay${this.viewportNumber}`);
+    const text = document.getElementById(`progressText${this.viewportNumber}`);
+    const cancelButton = document.getElementById(`cancelButton${this.viewportNumber}`);
+    
+    if (overlay && text) {
+      text.textContent = message;
+      overlay.classList.add('active');
+      this.updateMetadata(metadata);
+      this.updateProgress(0);
+      this.currentStep = 0;
+      this.updateSteps();
+      
+      // Show cancel button if operation can be cancelled
+      if (operationId && cancelButton) {
+        this.operationId = operationId;
+        cancelButton.style.display = 'flex';
+      } else if (cancelButton) {
+        cancelButton.style.display = 'none';
+      }
+    }
+  }
+
+  hide() {
+    const overlay = document.getElementById(`progressOverlay${this.viewportNumber}`);
+    const cancelButton = document.getElementById(`cancelButton${this.viewportNumber}`);
+    
+    if (overlay) {
+      overlay.classList.remove('active');
+    }
+    
+    if (cancelButton) {
+      cancelButton.style.display = 'none';
+    }
+    
+    this.operationId = null;
+    this.abortController = null;
+  }
+
+  updateProgress(percentage, message = null) {
+    this.percentage = Math.max(0, Math.min(100, percentage));
+    
+    const ring = document.getElementById(`progressRing${this.viewportNumber}`);
+    const percentageEl = document.getElementById(`progressPercentage${this.viewportNumber}`);
+    const text = document.getElementById(`progressText${this.viewportNumber}`);
+    
+    if (ring) {
+      const circumference = 226; // 2 * π * 36
+      const offset = circumference - (this.percentage / 100) * circumference;
+      ring.style.strokeDashoffset = offset;
+    }
+    
+    if (percentageEl) {
+      percentageEl.textContent = `${Math.round(this.percentage)}%`;
+    }
+    
+    if (message && text) {
+      text.textContent = message;
+    }
+  }
+
+  nextStep(message, metadata = {}) {
+    this.currentStep = Math.min(this.currentStep + 1, this.totalSteps);
+    const stepPercentage = (this.currentStep / this.totalSteps) * 100;
+    this.updateProgress(stepPercentage, message);
+    this.updateMetadata(metadata);
+    this.updateSteps();
+  }
+
+  updateMetadata(metadata) {
+    this.metadata = { ...this.metadata, ...metadata };
+    const container = document.getElementById(`progressMetadata${this.viewportNumber}`);
+    
+    if (container) {
+      container.innerHTML = '';
+      
+      Object.entries(this.metadata).forEach(([key, value], index) => {
+        if (value) {
+          const tag = document.createElement('div');
+          tag.className = 'metadata-tag';
+          tag.textContent = `${key}: ${value}`;
+          tag.style.animationDelay = `${index * 0.1}s`;
+          container.appendChild(tag);
+        }
+      });
+    }
+  }
+
+  updateSteps() {
+    for (let i = 1; i <= this.totalSteps; i++) {
+      const step = document.getElementById(`step${i}_${this.viewportNumber}`);
+      if (step) {
+        step.classList.remove('active', 'completed');
+        if (i < this.currentStep) {
+          step.classList.add('completed');
+        } else if (i === this.currentStep) {
+          step.classList.add('active');
+        }
+      }
+    }
+  }
+
+  setError(message) {
+    this.updateProgress(0, message);
+    const ring = document.getElementById(`progressRing${this.viewportNumber}`);
+    if (ring) {
+      ring.style.stroke = '#dc3545';
+    }
+  }
+
+  setAbortController(controller) {
+    this.abortController = controller;
+  }
+
+  cancel() {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.updateProgress(0, 'Cancelling...');
+      
+      setTimeout(() => {
+        this.hide();
+      }, 1000);
+    }
+  }
+}
+
+// Create progress managers for both viewports
+const progressManagers = {
+  1: new ProgressManager(1),
+  2: new ProgressManager(2)
+};
+
+// Cancel operation function
+function cancelOperation(viewportNumber) {
+  console.log(`Cancelling operation for viewport ${viewportNumber}`);
+  
+  if (progressManagers[viewportNumber]) {
+    progressManagers[viewportNumber].cancel();
+  }
+  
+  // Also cancel any active downloads
+  for (const [operationId, downloadInfo] of activeDownloads.entries()) {
+    if (downloadInfo.viewportNumber === viewportNumber) {
+      if (downloadInfo.abortController) {
+        downloadInfo.abortController.abort();
+      }
+      activeDownloads.delete(operationId);
+      console.log(`Cancelled download operation: ${operationId}`);
+    }
+  }
+}
+
+// Update the existing progress functions
+function showProgress(viewportNumber, message = 'Loading...', metadata = {}) {
+  const operationId = `operation_${viewportNumber}_${Date.now()}`;
+  progressManagers[viewportNumber].show(message, metadata, operationId);
+  return operationId;
+}
+
+function hideProgress(viewportNumber) {
+  progressManagers[viewportNumber].hide();
+}
+
+function updateProgress(viewportNumber, percentage, message = null, metadata = {}) {
+  progressManagers[viewportNumber].updateProgress(percentage, message);
+  if (Object.keys(metadata).length > 0) {
+    progressManagers[viewportNumber].updateMetadata(metadata);
+  }
+}
+
+function nextProgressStep(viewportNumber, message, metadata = {}) {
+  progressManagers[viewportNumber].nextStep(message, metadata);
+}
+
+    // Toggle between DICOM view and File Browser
+    async function toggleFileFrame() {
+      const dicomView = document.getElementById('dicomView');
+      const fileBrowser = document.getElementById('fileBrowserContainer');
+
+      if (fileBrowser.style.display === 'none' || fileBrowser.style.display === '') {
+        const s3Ready = await checkS3Status();
+        if (!s3Ready) {
+          return;
+        }
+        
+        dicomView.style.display = 'none';
+        fileBrowser.style.display = 'block';
+        if (!s3TreeData) {
+          loadS3Tree();
+        }
+      } else {
+        fileBrowser.style.display = 'none';
+        dicomView.style.display = 'flex';
+      }
+    }
+
+// Enhanced Tree Browser with Drill-down Navigation and Sorting
+class S3TreeBrowser {
+  constructor() {
+    this.currentPath = [];
+    this.currentData = null;
+    this.rootData = null;
+    this.selectedItem = null;
+    this.isLoading = false;
+  }
+
+  async initialize() {
+    await this.loadRootLevel();
+  }
+
+  async loadRootLevel() {
+    try {
+      this.showLoading();
+      console.log('Loading S3 root tree with progress...');
+
+      const response = await fetch('/api/s3-flat-list');
+
+      if (response.status === 503) {
+        const data = await response.json();
+        if (data.needs_credentials) {
+          showS3CredentialsModal();
+          return;
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body.getReader();
+      const contentLength = +response.headers.get("Content-Length") || 0;
+
+      let receivedLength = 0;
+      let chunks = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedLength += value.length;
+
+        if (contentLength > 0) {
+          const percent = Math.floor((receivedLength / contentLength) * 100);
+          updateS3TreeProgress(percent);  // Updates UI
+        }
+      }
+
+      const fullBlob = new Blob(chunks);
+      const text = await fullBlob.text();
+      const data = JSON.parse(text);
+
+      console.log('S3 flat list data received:', data);
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format: expected array');
+      }
+
+      // Build the tree from flat list and apply sorting
+      this.rootData = this.buildTreeFromFlatList(data);
+      this.currentData = this.rootData;
+      this.currentPath = [];
+      this.renderCurrentLevel();
+      this.hideLoading();
+
+      // Optional: hide the progress display
+      document.getElementById("treeProgressBarContainer")?.style?.setProperty('display', 'none', 'important');
+
+    } catch (error) {
+      console.error('Error loading S3 flat list:', error);
+      this.showError(`Failed to load S3 tree: ${error.message}`);
+    }
+  }
+
+  buildTreeFromFlatList(files) {
+    const root = [];
+
+    files.forEach(file => {
+      const parts = file.key.split('/');
+      let current = root;
+
+      parts.forEach((part, index) => {
+        let node = current.find(n => n.name === part);
+        if (!node) {
+          node = {
+            name: part,
+            type: index === parts.length - 1 ? 'file' : 'folder',
+            ...(index === parts.length - 1
+              ? {
+                  size: file.size,
+                  last_modified: file.last_modified,
+                  path: file.key
+                }
+              : { children: [] })
+          };
+          current.push(node);
+        }
+        if (node.type === 'folder') {
+          current = node.children;
+        }
+      });
+    });
+
+    // Apply custom sorting to the entire tree
+    return sortTreeStructure(root);
+  }
+
+  showLoading() {
+    const container = document.getElementById('fileTreeContainer');
+    container.innerHTML = `
+      <div class="tree-loading">
+        <div class="loader"></div>
+        <span style="margin-left: 10px;">Loading...</span>
+      </div>
+    `;
+    this.isLoading = true;
+  }
+
+  hideLoading() {
+    this.isLoading = false;
+  }
+
+  showError(message) {
+    const container = document.getElementById('fileTreeContainer');
+    container.innerHTML = `
+      <div class="tree-error">
+        <p>${message}</p>
+        <button class="retry-button" onclick="s3Browser.loadRootLevel()">Retry</button>
+      </div>
+    `;
+    this.hideLoading();
+  }
+
+  renderCurrentLevel() {
+    this.updateNavigation();
+    this.renderItems();
+  }
+
+  renderSearchResults(results) {
+  const container = document.getElementById('fileTreeContainer');
+
+  if (!results.length) {
+    container.innerHTML = '<div class="tree-empty">No matching files or folders found.</div>';
+    return;
+  }
+
+  // Helper to format bytes to KB/MB/GB
+  function formatFileSize(bytes) {
+    if (bytes === 0 || bytes == null) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const size = bytes / Math.pow(1024, i);
+    return `${size.toFixed(1)} ${sizes[i]}`;
+  }
+
+  const ul = document.createElement('ul');
+  ul.className = 'file-tree';
+
+  results.forEach(result => {
+    const li = document.createElement('li');
+    li.className = 'tree-item';
+    li.dataset.fullPath = result.path;
+    li.dataset.name = result.name;
+    li.dataset.type = result.type;
+
+    const iconClass = result.type === 'folder' ? 'fa-folder' : 'fa-file';
+    const iconColor = result.type === 'folder' ? 'folder-icon' : 'file-icon';
+    const sizeText = result.type === 'file' ? formatFileSize(result.size) : '';
+
+    li.innerHTML = `
+      <div class="tree-item-content">
+        <div class="tree-icon ${iconColor}">
+          <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="tree-item-name">${result.fullPath}</div>
+        <div class="tree-item-info">${sizeText}</div>
+      </div>
+    `;
+
+    // Right-click to show context menu and set selected file
+    li.addEventListener('contextmenu', function (e) {
+      selectedTreeItem = li;
+      
+      // Call the corrected function with the event and file path
+      showContextMenu(e, result.path);
+
+      // Highlight selected item
+      document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+      li.classList.add('selected');
+    });
+
+    ul.appendChild(li);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(ul);
+}
+
+
+
+  updateNavigation() {
+    const backButton = document.getElementById('backButton');
+    const currentPathSpan = document.getElementById('currentPath');
+    
+    if (this.currentPath.length > 0) {
+      backButton.classList.add('visible');
+      currentPathSpan.textContent = this.currentPath.join(' / ');
+    } else {
+      backButton.classList.remove('visible');
+      currentPathSpan.textContent = 'Root';
+    }
+  }
+
+  renderItems() {
+    const container = document.getElementById('fileTreeContainer');
+    
+    if (!this.currentData || this.currentData.length === 0) {
+      container.innerHTML = '<div class="tree-empty">No files or folders found</div>';
+      return;
+    }
+
+    // Apply sorting to current level before rendering
+    const sortedData = sortTreeStructure([...this.currentData]);
+
+    const treeList = document.createElement('ul');
+    treeList.className = 'file-tree';
+
+    sortedData.forEach(item => {
+      const listItem = this.createTreeItem(item);
+      treeList.appendChild(listItem);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(treeList);
+  }
+
+createTreeItem(item) {
+  const li = document.createElement('li');
+
+  const treeItem = document.createElement('div');
+  treeItem.className = 'tree-item';
+
+  // === Click behavior (select or expand) ===
+  treeItem.onclick = () => this.handleItemClick(item, treeItem);
+
+  // === Right-click context menu for FILES only ==//
+  if (item.path) {
+    treeItem.dataset.filePath = item.path;
+  }
+
+  // === Content container ===
+  const content = document.createElement('div');
+  content.className = 'tree-item-content';
+
+  // === Expand arrow (only folders) ===
+  const arrow = document.createElement('div');
+  arrow.className = 'expand-arrow collapsed';
+  arrow.textContent = item.type === 'folder' ? '>' : '';
+  if (item.type !== 'folder') {
+    arrow.style.width = '16px'; // spacer for file rows
+  }
+  content.appendChild(arrow);
+
+  // === Icon ===
+  const icon = document.createElement('span');
+  icon.className = 'tree-icon';
+  icon.innerHTML = item.type === 'folder'
+    ? '<i class="fas fa-folder folder-icon"></i>'
+    : '<i class="fas fa-file-medical file-icon"></i>';
+  content.appendChild(icon);
+
+  // === Name ===
+  const name = document.createElement('span');
+  name.className = 'tree-item-name';
+  name.textContent = item.name || 'Unnamed';
+  content.appendChild(name);
+
+  // === File size (for files only) ===
+  if (item.type === 'file' && item.size) {
+    const info = document.createElement('span');
+    info.className = 'tree-item-info';
+    info.textContent = this.formatFileSize(item.size);
+    content.appendChild(info);
+  }
+
+  // === Tooltip with full filename ===
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tree-item-tooltip';
+  tooltip.textContent = item.name || '';
+
+  // === Assemble final node ===
+  treeItem.appendChild(content);
+  treeItem.appendChild(tooltip);
+  li.appendChild(treeItem);
+
+  return li;
+}
+
+
+
+  async handleItemClick(item, element) {
+    if (this.isLoading) return;
+
+    // Clear previous selection
+    document.querySelectorAll('.tree-item.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+
+    // Select current item
+    element.classList.add('selected');
+    this.selectedItem = item;
+
+    if (item.type === 'folder') {
+      await this.drillIntoFolder(item);
+    } else {
+      console.log('File selected:', item.path);
+      selectedFilePath = item.path;
+    }
+  }
+
+  async drillIntoFolder(folder) {
+    try {
+      // Show loading state
+      this.showLoading();
+      
+      // Update path
+      this.currentPath.push(folder.name);
+      
+      // Load folder contents (simulate API call or use cached children)
+      let folderContents;
+      if (folder.children && folder.children.length > 0) {
+        folderContents = folder.children;
+      } else {
+        // In a real implementation, you might make an API call here
+        // For now, we'll use the children if available
+        folderContents = folder.children || [];
+      }
+      
+      this.currentData = folderContents;
+      this.renderCurrentLevel();
+      this.hideLoading();
+      
+      console.log(`Drilled into folder: ${this.currentPath.join('/')}`);
+      
+    } catch (error) {
+      console.error('Error drilling into folder:', error);
+      this.showError(`Failed to load folder contents: ${error.message}`);
+      // Revert path on error
+      this.currentPath.pop();
+    }
+  }
+
+  goBack() {
+    if (this.currentPath.length === 0) return;
+
+    this.currentPath.pop();
+    
+    if (this.currentPath.length === 0) {
+      // Back to root
+      this.currentData = this.rootData;
+    } else {
+      // Navigate to parent folder
+      this.currentData = this.findFolderByPath(this.currentPath);
+    }
+    
+    this.renderCurrentLevel();
+    console.log(`Navigated back to: ${this.currentPath.join('/') || 'root'}`);
+  }
+
+  findFolderByPath(path) {
+    let current = this.rootData;
+    
+    for (const segment of path) {
+      const folder = current.find(item => item.name === segment && item.type === 'folder');
+      if (folder && folder.children) {
+        current = folder.children;
+      } else {
+        console.warn('Could not find path:', path);
+        return this.rootData;
+      }
+    }
+    
+    return current;
+  }
+
+  handleFileRightClick(e, item, element) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Right-click detected on file:', item.path);
+    selectedFilePath = item.path;
+    this.selectedItem = item;
+    
+    // Clear previous selection and select this item
+    document.querySelectorAll('.tree-item.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    
+    showContextMenu(e, item);
+  }
+
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  // Search functionality
+  search(query) {
+    if (!query.trim()) {
+      this.renderCurrentLevel();
+      return;
+    }
+
+    const filteredItems = this.currentData.filter(item =>
+      item.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    const container = document.getElementById('fileTreeContainer');
+    
+    if (filteredItems.length === 0) {
+      container.innerHTML = '<div class="tree-empty">No matching files found</div>';
+      return;
+    }
+
+    // Apply sorting to filtered results
+    const sortedFilteredItems = sortTreeStructure([...filteredItems]);
+
+    const treeList = document.createElement('ul');
+    treeList.className = 'file-tree';
+
+    sortedFilteredItems.forEach(item => {
+      const listItem = this.createTreeItem(item);
+      treeList.appendChild(listItem);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(treeList);
+  }
+}
+
+// Global tree search
+function searchS3Tree(query, tree, path = []) {
+  const results = [];
+
+  tree.forEach(node => {
+    const fullPath = [...path, node.name];
+    if (node.name.toLowerCase().includes(query)) {
+      results.push({ ...node, fullPath: fullPath.join('/') });
+    }
+
+    if (node.type === 'folder' && node.children?.length > 0) {
+      results.push(...searchS3Tree(query, node.children, fullPath));
+    }
+  });
+
+  return results;
+}
+
+
+// Initialize the browser
+let s3Browser = new S3TreeBrowser();
+
+    // Update search event listener
+    function runTreeSearch() {
+  const query = document.getElementById('treeSearchInput').value.toLowerCase().trim();
+  const extension = document.getElementById('extensionFilter').value;
+
+  if (!query && !extension) {
+    s3Browser.renderCurrentLevel(); // Show default tree
+    return;
+  }
+
+  let results = searchS3Tree(query, s3Browser.rootData || []);
+
+  if (extension) {
+    results = results.filter(item => item.type === 'file' && item.name.toLowerCase().endsWith(extension));
+  }
+
+  s3Browser.renderSearchResults(results);
+}
+
+document.getElementById('treeSearchInput').addEventListener('input', runTreeSearch);
+document.getElementById('extensionFilter').addEventListener('change', runTreeSearch);
+
+
+
+    // Replace the existing loadS3Tree function with:
+async function loadS3Tree() {
+  s3Browser.showLoading();
+  try {
+    const response = await fetch('/api/s3-flat-list');
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid S3 response');
+    }
+
+    // Convert flat list to tree with sorting
+    const treeData = s3Browser.buildTreeFromFlatList(data);
+    s3Browser.rootData = treeData;
+    s3Browser.currentData = treeData;
+    s3Browser.currentPath = [];
+    s3Browser.renderCurrentLevel();
+    s3Browser.hideLoading();
+
+  } catch (err) {
+    console.error('Failed to load flat S3 list:', err);
+    s3Browser.showError('Failed to load S3 file list. ' + err.message);
+  }
+}
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize zoom displays
+      updateZoomDisplay(1);
+      updateZoomDisplay(2);
+      
+      // Initialize DICOM viewport layout (default to stacked)
+      const dicomContainer = document.getElementById('dicomViewportsContainer');
+      if (dicomContainer) {
+        dicomContainer.classList.add('stacked');
+      }
+      
+      // Initialize S3 viewport layout (default to side-by-side)
+      const s3Container = document.getElementById('viewportsContainer');
+      if (s3Container) {
+        s3Container.classList.remove('stacked');
+      }
+      
+      console.log('Application initialized with layout controls and sorting');
+    });
+
+    // Original functions for DICOM upload (keeping for compatibility)
+    const crcTable = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        crcTable[i] = c;
+    }
+
+    async function calculateFileCRC32(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const buffer = e.target.result;
+                const array = new Uint8Array(buffer);
+                let crc = 0 ^ (-1);
+                for (let i = 0; i < array.length; i++) {
+                    crc = (crc >>> 8) ^ crcTable[(crc ^ array[i]) & 0xFF];
+                }
+                const crcValue = ((crc ^ (-1)) >>> 0).toString(16).padStart(8, '0');
+                resolve(crcValue);
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async function uploadDICOM(viewportNumber) {
+        const fileInput = document.getElementById('dicomFile' + viewportNumber + '_s3');
+        if (fileInput.files.length === 0) return;
+
+        const file = fileInput.files[0];
+        console.log('Uploading DICOM file:', file.name, 'to viewport:', viewportNumber);
+    }
+
+    // Toolbar functionality
+    document.getElementById('e2eToDicomConverter').addEventListener('click', async function() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.e2e';
+        fileInput.onchange = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            console.log('Converting E2E file:', file.name);
+        };
+        fileInput.click();
+    });
+
+    document.getElementById('dicomMetadataExtractorTool').addEventListener('click', async function() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.dcm';
+        fileInput.onchange = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            console.log('Extracting metadata from:', file.name);
+        };
+        fileInput.click();
+    });
+
+    // S3 Credentials Management
+    async function checkS3Status() {
+      if (s3StatusChecked && s3ConfiguredStatus !== null) {
+        if (!s3ConfiguredStatus.configured && s3ConfiguredStatus.needs_credentials) {
+          showS3CredentialsModal();
+          return false;
+        }
+        return true;
+      }
+
+      try {
+        const response = await fetch('/api/s3-status');
+        const status = await response.json();
+        
+        s3StatusChecked = true;
+        s3ConfiguredStatus = status;
+        
+        if (!status.configured && status.needs_credentials) {
+          showS3CredentialsModal();
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error('Error checking S3 status:', error);
+        s3StatusChecked = true;
+        s3ConfiguredStatus = { configured: false, needs_credentials: true };
+        showS3CredentialsModal();
+        return false;
+      }
+    }
+
+    function showS3CredentialsModal() {
+      document.getElementById('s3CredentialsModal').style.display = 'flex';
+      document.getElementById('s3ErrorMessage').style.display = 'none';
+      document.getElementById('s3SuccessMessage').style.display = 'none';
+    }
+
+    function closeS3Modal() {
+      document.getElementById('s3CredentialsModal').style.display = 'none';
+    }
+
+    async function submitS3Credentials() {
+      const accessKey = document.getElementById('s3AccessKey').value.trim();
+      const secretKey = document.getElementById('s3SecretKey').value.trim();
+      const region = document.getElementById('s3Region').value.trim();
+      const bucket = document.getElementById('s3Bucket').value.trim();
+      const saveToEnv = document.getElementById('s3SaveToEnv').checked;
+      
+      if (!accessKey || !secretKey || !region || !bucket) {
+        showS3Error('Please fill in all fields.');
+        return;
+      }
+      
+      document.getElementById('s3FormContent').style.display = 'none';
+      document.getElementById('s3LoadingState').style.display = 'block';
+      document.getElementById('s3ErrorMessage').style.display = 'none';
+      
+      try {
+        const response = await fetch('/api/set-s3-credentials', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessKey: accessKey,
+            secretKey: secretKey,
+            region: region,
+            bucket: bucket,
+            saveToEnv: saveToEnv
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showS3Success(result.message + (result.saved_to_env ? ' Credentials saved to .env file.' : ''));
+          
+          s3StatusChecked = false;
+          s3ConfiguredStatus = null;
+          s3TreeData = null;
+          
+          setTimeout(() => {
+            closeS3Modal();
+            loadS3Tree();
+          }, 2000);
+          
+        } else {
+          throw new Error(result.error || 'Failed to set credentials');
+        }
+        
+      } catch (error) {
+        console.error('Error setting S3 credentials:', error);
+        showS3Error('Error: ' + error.message);
+      } finally {
+        document.getElementById('s3LoadingState').style.display = 'none';
+        document.getElementById('s3FormContent').style.display = 'block';
+      }
+    }
+
+    function showS3Error(message) {
+      const errorDiv = document.getElementById('s3ErrorMessage');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      document.getElementById('s3SuccessMessage').style.display = 'none';
+    }
+
+    function showS3Success(message) {
+      const successDiv = document.getElementById('s3SuccessMessage');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+      document.getElementById('s3ErrorMessage').style.display = 'none';
+    }
+
+    // Add responsive resize handler
+    window.addEventListener('resize', () => {
+      // Recalculate constraints for both viewports
+      for (let viewportNumber of [1, 2]) {
+        if (viewportData[viewportNumber]) {
+          updateImageTransform(viewportNumber);
+        }
+      }
+    });
+
+// Show context menu
+// Show context menu
+function showContextMenu(event, filePath) {
+  // Prevent the default browser context menu
+  event.preventDefault();
+
+  // Set the selected file path for menu actions
+  selectedFilePath = filePath;
+
+  const contextMenu = document.getElementById('contextMenu');
+  if (!contextMenu) return;
+
+  // Make the menu visible to measure its dimensions
+  contextMenu.style.display = 'block';
+  const menuWidth = contextMenu.offsetWidth;
+  const menuHeight = contextMenu.offsetHeight;
+
+  const pageWidth = window.innerWidth;
+  const pageHeight = window.innerHeight;
+
+  // Get cursor position from the event object
+  let x = event.pageX;
+  let y = event.pageY;
+
+  // Adjust position if the menu would go off-screen
+  if (x + menuWidth > pageWidth) {
+    x = pageWidth - menuWidth - 10; // Add a small margin
+  }
+  if (y + menuHeight > pageHeight) {
+    y = pageHeight - menuHeight - 10; // Add a small margin
+  }
+
+  // Apply the calculated position
+  contextMenu.style.left = `${x}px`;
+  contextMenu.style.top = `${y}px`;
+}
+
+
+
+document.getElementById('fileTreeContainer').addEventListener('contextmenu', e => {
+    // Find the nearest .tree-item element
+    const treeItem = e.target.closest('.tree-item');
+
+    // Ensure it's a file item with a path
+    if (!treeItem || !treeItem.dataset.filePath) {
+        return; 
+    }
+
+    // Get the file path from the data attribute
+    const filePath = treeItem.dataset.filePath;
+
+    // Call our standardized function to show the menu
+    showContextMenu(e, filePath);
+
+    // Optional: Highlight the selected item
+    document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
+    if (treeItem.parentElement.matches('li.tree-item')) { // check if it's the li or the div inside it
+        treeItem.parentElement.classList.add('selected');
+    } else {
+        treeItem.classList.add('selected');
+    }
+});
+
+// Hide context menu on click outside
+document.addEventListener('click', e => {
+    const menu = document.getElementById('contextMenu');
+    if (!menu) return;
+    if (!menu.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+
+
+// Load DICOM image into viewport from context menu
+async function loadIntoViewport(viewportNumber) {
+  if (!selectedFilePath) {
+    console.error('No file path selected');
+    alert('Please select a DICOM file first.');
+    return;
+  }
+
+  console.log(`Loading file: ${selectedFilePath} into viewport: ${viewportNumber}`);
+  document.getElementById('contextMenu').style.display = 'none';
+  
+  try {
+    await loadIntoViewportWithPath(viewportNumber, selectedFilePath);
+  } catch (error) {
+    console.error('Error in loadIntoViewport:', error);
+    alert(`Error loading file: ${error.message}`);
+  }
+}
+
+// Enhanced function to load DICOM with CRC-based caching and cancellation support
+async function loadIntoViewportWithPath(viewportNumber, filePath) {
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+  const placeholder = document.querySelector(`#viewportContent${viewportNumber} .viewport-placeholder`);
+  const errorDiv = document.getElementById(`error${viewportNumber}`);
+  const frameSliderContainer = document.getElementById(`frameSliderContainer${viewportNumber}`);
+
+  // Create abort controller for cancellation
+  const abortController = new AbortController();
+  const operationId = `load_${viewportNumber}_${Date.now()}`;
+  
+  // Store operation for cancellation
+  activeDownloads.set(operationId, {
+    viewportNumber: viewportNumber,
+    abortController: abortController,
+    filePath: filePath
+  });
+
+  // Set abort controller in progress manager
+  progressManagers[viewportNumber].setAbortController(abortController);
+
+  // Initialize cacheSource variable at function scope
+  let cacheSource = 'unknown';
+
+  // Start performance timer
+  startPerformanceTimer(viewportNumber, 'File Selection → Image Loaded');
+
+  // Extract file info for metadata
+  const fileName = filePath.split('/').pop();
+  const fileExt = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+  
+  // Show enhanced progress with cancel support
+  const progressOperationId = showProgress(viewportNumber, 'Checking CRC cache...', {
+    'File': fileName,
+    'Type': fileExt,
+    'Source': 'S3',
+    'Cache': 'Checking...'
+  });
+  
+  // Hide other elements
+  if (placeholder) placeholder.style.display = 'none';
+  img.style.display = 'none';
+  errorDiv.style.display = 'none';
+  frameSliderContainer.classList.remove('active');
+
+  try {
+    console.log(`Starting CRC-based DICOM load process for ${filePath}`);
+    
+    // Check if operation was cancelled
+    if (abortController.signal.aborted) {
+      throw new Error('Operation cancelled by user');
+    }
+    
+    // Step 1: Check CRC-based cache first
+    nextProgressStep(viewportNumber, 'Checking CRC cache...', {
+      'Status': 'CRC Cache Check',
+      'Progress': 'Step 1/5'
+    });
+    
+    // Get file metadata for CRC calculation
+    const fileMetadata = {
+      path: filePath,
+      size: s3Browser.selectedItem?.size || 0,
+      lastModified: s3Browser.selectedItem?.last_modified || '',
+      frame: 0
+    };
+    
+    // Try to load from CRC cache first
+    try {
+      const cachedResult = await loadImageWithCRC(filePath, fileMetadata);
+      
+      // Check if cancelled after cache check
+      if (abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      
+      if (cachedResult.source === 'cache' || cachedResult.source === 'cache_backend_crc') {
+        // Image loaded from cache - display immediately
+        nextProgressStep(viewportNumber, 'Loaded from CRC cache!', {
+          'Status': 'Cache Hit',
+          'Cache': cachedResult.source.toUpperCase(),
+          'CRC': cachedResult.cacheKey.substring(0, 8),
+          'Progress': 'Step 5/5'
+        });
+        
+        img.onload = () => {
+          console.log(`CRC cached image loaded successfully for viewport ${viewportNumber}`);
+          img.style.display = 'block';
+          resetZoom(viewportNumber);
+          setupImageInteractions(viewportNumber);
+          
+          // Set up single frame (cached images are typically single frame)
+          totalFrames[viewportNumber] = 1;
+          currentFrames[viewportNumber] = 0;
+          setupFrameSlider(viewportNumber);
+          
+          hideProgress(viewportNumber);
+          endPerformanceTimer(viewportNumber, 'File Selection → Image Loaded (CRC Cache)');
+          
+          // Clean up operation tracking
+          activeDownloads.delete(operationId);
+        };
+        
+        img.src = cachedResult.imageData;
+        return;
+      }
+    } catch (cacheError) {
+      if (abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      console.warn(`CRC cache failed: ${cacheError.message}`);
+    }
+    
+    // Step 2: Download and process DICOM from S3 (fallback to original method)
+    nextProgressStep(viewportNumber, 'Processing request...', {
+      'Status': 'S3 Download',
+      'Progress': 'Step 2/5'
+    });
+    
+    try {
+      const downloadResponse = await fetch(`/api/download_dicom_from_s3?path=${encodeURIComponent(filePath)}`, {
+        signal: abortController.signal
+      });
+      
+      if (!downloadResponse.ok) {
+        const errorText = await downloadResponse.text();
+        console.error('Download response error:', errorText);
+        throw new Error(`Download failed: ${downloadResponse.status} ${downloadResponse.statusText}`);
+      }
+      
+      const dicomData = await downloadResponse.json();
+      console.log('DICOM data received:', dicomData);
+      
+      // Check if cancelled after download
+      if (abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      
+      // Update cacheSource from response
+      cacheSource = dicomData.cache_source || 'fresh_download';
+      let cacheMessage = '';
+      switch(cacheSource) {
+        case 'memory':
+          cacheMessage = 'Loaded from memory cache';
+          break;
+        case 'disk':
+          cacheMessage = 'Loaded from disk cache';
+          break;
+        case 'fresh_download':
+          cacheMessage = 'Downloaded from S3';
+          break;
+        default:
+          cacheMessage = 'Processed';
+      }
+      
+      // Store DICOM data for this viewport
+      viewportData[viewportNumber] = dicomData;
+      viewportData[viewportNumber].s3_key = filePath;
+
+      // Step 3: Processing DICOM
+      nextProgressStep(viewportNumber, cacheMessage, {
+        'Status': 'Processing',
+        'Frames': dicomData.number_of_frames || 1,
+        'Cache': cacheSource.toUpperCase(),
+        'Progress': 'Step 3/5'
+      });
+
+      // Step 4: Get frame information and load first frame
+      nextProgressStep(viewportNumber, 'Loading frame data...', {
+        'Status': 'Frame Analysis',
+        'Cache': cacheSource.toUpperCase(),
+        'Progress': 'Step 4/5'
+      });
+      
+      const framesResponse = await fetch(`/api/view_frames/${dicomData.dicom_file_path}`, {
+        signal: abortController.signal
+      });
+      
+      if (!framesResponse.ok) {
+        throw new Error(`Failed to get frame info: ${framesResponse.statusText}`);
+      }
+      
+      const framesData = await framesResponse.json();
+      console.log('Frames data received:', framesData);
+      
+      // Check if cancelled after frame info
+      if (abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      
+      totalFrames[viewportNumber] = framesData.number_of_frames;
+      currentFrames[viewportNumber] = 0;
+      
+      // Step 5: Auto image display logic
+const isOCT = isOCTDicom(viewportData[viewportNumber]);
+if (isOCT) {
+  nextProgressStep(viewportNumber, 'Applying OCT flattening...', {
+    'Status': 'OCT Processing',
+    'Type': 'OCT Detected',
+    'Cache': cacheSource.toUpperCase(),
+    'Progress': 'Step 5/5'
+  });
+  
+  // For OCT images, skip loading original frames and go directly to flattening
+  await flattenImageDirectly(viewportNumber);
+  
+  // Override frame data to show only flattened version
+  totalFrames[viewportNumber] = 1;
+  currentFrames[viewportNumber] = 0;
+  
+} else {
+  // Load the first frame with CRC caching for non-OCT images
+  await loadFrameWithCRC(viewportNumber, 0, abortController);
+  
+  nextProgressStep(viewportNumber, 'Finalizing...', {
+    'Status': 'Complete',
+    'Type': 'Standard DICOM',
+    'Cache': cacheSource.toUpperCase(),
+    'Progress': 'Step 5/5'
+  });
+}
+      
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      console.error('Fetch error details:', error);
+      throw error;
+    }
+    
+    // Setup frame slider
+    setupFrameSlider(viewportNumber);
+    
+    // Complete progress
+    updateProgress(viewportNumber, 100, 'Loading complete!', {
+      'Status': 'Ready',
+      'Cache': cacheSource.toUpperCase(),
+      'Loaded': 'Success'
+    });
+    
+    // Hide progress after a brief delay
+    setTimeout(() => {
+      hideProgress(viewportNumber);
+    }, 1000);
+    
+    // End performance timer
+    endPerformanceTimer(viewportNumber, 'File Selection → Image Loaded');
+    
+    console.log(`Successfully loaded DICOM into viewport ${viewportNumber} from ${cacheSource}`);
+    
+  } catch (error) {
+    console.error('Error loading DICOM:', error);
+    
+    if (error.message.includes('cancelled')) {
+      progressManagers[viewportNumber].updateProgress(0, 'Cancelled by user');
+      setTimeout(() => {
+        hideProgress(viewportNumber);
+        if (placeholder) placeholder.style.display = 'block';
+      }, 1000);
+    } else {
+      progressManagers[viewportNumber].setError(`Error: ${error.message}`);
+      
+      setTimeout(() => {
+        hideProgress(viewportNumber);
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'block';
+      }, 2000);
+    }
+    
+    // End performance timer on error
+    endPerformanceTimer(viewportNumber, 'File Selection → Image Loaded (ERROR)');
+  } finally {
+    // Clean up operation tracking
+    activeDownloads.delete(operationId);
+  }
+}
+
+// Enhanced frame loading with CRC caching and cancellation support
+async function loadFrameWithCRC(viewportNumber, frameNumber, abortController = null) {
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+  const data = viewportData[viewportNumber];
+  
+  if (!data) {
+    console.error('No DICOM data available for viewport', viewportNumber);
+    return;
+  }
+
+  try {
+    console.log(`Loading frame ${frameNumber} for viewport ${viewportNumber} with CRC caching`);
+    
+    // Check if operation was cancelled
+    if (abortController && abortController.signal.aborted) {
+      throw new Error('Operation cancelled by user');
+    }
+    
+    // Create metadata for this specific frame
+    const frameMetadata = {
+      path: data.s3_key,
+      dicomFilePath: data.dicom_file_path,
+      frame: frameNumber,
+      size: data.size || 0,
+      lastModified: data.last_modified || ''
+    };
+    
+    // Try CRC cache first
+    try {
+      const cachedResult = await loadImageWithCRC(data.s3_key, frameMetadata);
+      
+      // Check if cancelled after cache check
+      if (abortController && abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      
+      img.onload = () => {
+        console.log(`Frame ${frameNumber} loaded successfully with CRC caching (${cachedResult.source})`);
+        img.style.display = 'block';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.width = 'auto';
+        img.style.height = 'auto';
+        
+        resetZoom(viewportNumber);
+        setupImageInteractions(viewportNumber);
+        updateFrameInfo(viewportNumber, frameNumber);
+      };
+      
+      img.onerror = () => {
+        console.error(`Failed to load cached image for frame ${frameNumber}`);
+        throw new Error('Failed to load cached image');
+      };
+      
+      img.src = cachedResult.imageData;
+      currentFrames[viewportNumber] = frameNumber;
+      
+      console.log(`Frame ${frameNumber} loaded from ${cachedResult.source} with CRC: ${cachedResult.cacheKey.substring(0, 8)}`);
+      return;
+      
+    } catch (cacheError) {
+      if (abortController && abortController.signal.aborted) {
+        throw new Error('Operation cancelled by user');
+      }
+      console.warn(`CRC cache failed for frame ${frameNumber}: ${cacheError.message}`);
+      // Fall back to original method
+    }
+    
+    // Fallback to original PNG endpoint
+    const fetchOptions = abortController ? { signal: abortController.signal } : {};
+    const pngResponse = await fetch(`/api/view_dicom_png?frame=${frameNumber}&dicom_file_path=${encodeURIComponent(data.dicom_file_path)}&v=${Date.now()}`, fetchOptions);
+    
+    if (!pngResponse.ok) {
+      throw new Error(`Failed to get PNG: ${pngResponse.statusText}`);
+    }
+    
+    const pngBlob = await pngResponse.blob();
+    const pngUrl = URL.createObjectURL(pngBlob);
+    
+    // Check if cancelled after download
+    if (abortController && abortController.signal.aborted) {
+      throw new Error('Operation cancelled by user');
+    }
+    
+    // Cache this frame for future use
+    try {
+      imageCache.set(
+        imageCache.generateCacheKey(data.s3_key, frameMetadata),
+        pngUrl,
+        frameMetadata
+      );
+    } catch (cacheSetError) {
+      console.warn(`Failed to cache frame ${frameNumber}: ${cacheSetError.message}`);
+    }
+    
+    // Display the image with proper constraints
+    img.onload = () => {
+      console.log(`Image loaded successfully for viewport ${viewportNumber} (fallback method)`);
+      img.style.display = 'block';
+      img.style.maxWidth = '100%';
+      img.style.maxHeight = '100%';
+      img.style.width = 'auto';
+      img.style.height = 'auto';
+      
+      resetZoom(viewportNumber);
+      setupImageInteractions(viewportNumber);
+      updateFrameInfo(viewportNumber, frameNumber);
+    };
+    
+    img.onerror = () => {
+      console.error(`Failed to load image for frame ${frameNumber}`);
+      throw new Error('Failed to load image');
+    };
+    
+    img.src = pngUrl;
+    currentFrames[viewportNumber] = frameNumber;
+    
+  } catch (error) {
+    console.error('Error loading frame:', error);
+    throw error;
+  }
+}
+
+// Load specific frame (updated to use CRC caching)
+async function loadFrame(viewportNumber, frameNumber) {
+  return await loadFrameWithCRC(viewportNumber, frameNumber);
+}
+
+// Setup frame slider - disable for flattened OCT images
+function setupFrameSlider(viewportNumber) {
+  console.log(`Setting up frame slider for viewport ${viewportNumber}`);
+  
+  const frameSlider = document.getElementById(`frameSlider${viewportNumber}`);
+  const frameSliderContainer = document.getElementById(`frameSliderContainer${viewportNumber}`);
+  const data = viewportData[viewportNumber];
+  
+  if (!frameSlider || !frameSliderContainer) {
+    console.error('Frame slider elements not found for viewport', viewportNumber);
+    return;
+  }
+  
+  // Hide frame slider for flattened OCT images
+  if (data && data.isFlattened) {
+    frameSliderContainer.classList.remove('active');
+    console.log(`Frame slider hidden for flattened OCT image in viewport ${viewportNumber}`);
+    return;
+  }
+  
+  const numFrames = totalFrames[viewportNumber];
+  
+  frameSlider.min = 0;
+  frameSlider.max = Math.max(0, numFrames - 1);
+  frameSlider.value = 0;
+  
+  frameSlider.onchange = null;
+  frameSlider.oninput = null;
+  
+  if (numFrames <= 1) {
+    frameSlider.disabled = true;
+    console.log(`Single-frame DICOM detected for viewport ${viewportNumber}, slider disabled`);
+  } else {
+    frameSlider.disabled = false;
+    frameSlider.oninput = async (e) => {
+      const frameNumber = parseInt(e.target.value);
+      console.log(`Frame slider changed to ${frameNumber} for viewport ${viewportNumber}`);
+      try {
+        await loadFrame(viewportNumber, frameNumber);
+      } catch (error) {
+        console.error('Error loading frame from slider:', error);
+      }
+    };
+  }
+  
+  frameSliderContainer.classList.add('active');
+  updateFrameInfo(viewportNumber, 0);
+  
+  console.log(`Frame slider setup complete for viewport ${viewportNumber}, ${numFrames} frame(s)`);
+}
+
+// Update frame info display
+function updateFrameInfo(viewportNumber, frameNumber) {
+  const frameInfo = document.getElementById(`frameInfo${viewportNumber}`);
+  if (frameInfo) {
+    frameInfo.textContent = `Frame ${frameNumber + 1} of ${totalFrames[viewportNumber]}`;
+  }
+}
+
+// Enhanced flatten function that caches only the flattened result for OCT images
+async function flattenImageDirectly(viewportNumber) {
+  const data = viewportData[viewportNumber];
+  if (!data) {
+    throw new Error('No DICOM data loaded in this viewport.');
+  }
+
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+
+  try {
+    // Generate cache key for flattened OCT image
+    const flattenMetadata = {
+      path: data.s3_key,
+      flattened: true,
+      frame: 0
+    };
+    
+    const flattenCacheKey = imageCache.generateCacheKey(data.s3_key + '_flattened', flattenMetadata);
+    
+    // Check if flattened version is already cached
+    const cachedFlattened = imageCache.get(flattenCacheKey);
+    if (cachedFlattened) {
+      console.log('Using cached flattened OCT image');
+      img.onload = () => {
+        console.log('Cached flattened OCT image loaded successfully');
+        img.style.display = 'block';
+        resetZoom(viewportNumber);
+        setupImageInteractions(viewportNumber);
+      };
+      img.src = cachedFlattened.imageData;
+      return;
+    }
+
+    console.log('Flattening OCT image and caching result...');
+    const flattenResponse = await fetch(`/api/flatten_dicom_image?dicom_file_path=${encodeURIComponent(data.dicom_file_path)}`);
+    
+    if (!flattenResponse.ok) {
+      const errorData = await flattenResponse.json().catch(() => ({}));
+      throw new Error(errorData.error || `OCT flattening failed: ${flattenResponse.statusText}`);
+    }
+    
+    const flattenedBlob = await flattenResponse.blob();
+    const flattenedUrl = URL.createObjectURL(flattenedBlob);
+    
+    // Cache ONLY the flattened image for OCT
+    const cacheMetadata = {
+      path: data.s3_key,
+      flattened: true,
+      size: flattenedBlob.size,
+      lastModified: Date.now(),
+      contentType: 'image/png'
+    };
+    
+    imageCache.set(flattenCacheKey, flattenedUrl, cacheMetadata);
+    console.log(`Flattened OCT image cached with CRC: ${flattenCacheKey.substring(0, 8)}`);
+    
+    // Store flattened URL in viewport data
+    viewportData[viewportNumber].flattenedUrl = flattenedUrl;
+    viewportData[viewportNumber].isFlattened = true;
+    
+    img.onload = () => {
+      console.log('Flattened OCT image loaded and cached successfully');
+      img.style.display = 'block';
+      resetZoom(viewportNumber);
+      setupImageInteractions(viewportNumber);
+    };
+    
+    img.src = flattenedUrl;
+    
+  } catch (error) {
+    console.error('Error flattening OCT image:', error);
+    throw error;
+  }
+}
+
+// Flatten and show flattened image (enhanced with caching)
+async function flattenImage(viewportNumber) {
+  const data = viewportData[viewportNumber];
+  if (!data) {
+    alert('No DICOM data loaded in this viewport.');
+    return;
+  }
+
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+
+  try {
+    // Check cache first
+    if (data.flattenedUrl) {
+      console.log('Using cached flattened image');
+      img.src = data.flattenedUrl;
+      return;
+    }
+
+    console.log('Flattening image...');
+    const flattenResponse = await fetch(`/api/flatten_dicom_image?dicom_file_path=${encodeURIComponent(data.dicom_file_path)}`);
+    
+    if (!flattenResponse.ok) {
+      const errorData = await flattenResponse.json().catch(() => ({}));
+      throw new Error(errorData.error || `Flattening failed: ${flattenResponse.statusText}`);
+    }
+    
+    const flattenedBlob = await flattenResponse.blob();
+    const flattenedUrl = URL.createObjectURL(flattenedBlob);
+    
+    // Cache flattened image URL
+    viewportData[viewportNumber].flattenedUrl = flattenedUrl;
+    
+    // Also cache in CRC cache
+    try {
+      const flattenMetadata = {
+        path: data.s3_key,
+        flattened: true,
+        size: flattenedBlob.size,
+        lastModified: Date.now()
+      };
+      
+      const flattenCacheKey = imageCache.generateCacheKey(data.s3_key + '_flattened', flattenMetadata);
+      imageCache.set(flattenCacheKey, flattenedUrl, flattenMetadata);
+      console.log(`Flattened image cached with CRC: ${flattenCacheKey.substring(0, 8)}`);
+    } catch (cacheError) {
+      console.warn(`Failed to cache flattened image: ${cacheError.message}`);
+    }
+    
+    img.onload = () => {
+      console.log('Flattened image loaded successfully');
+    };
+    
+    img.src = flattenedUrl;
+    
+  } catch (error) {
+    console.error('Error flattening image:', error);
+    alert(`Error flattening image: ${error.message}`);
+  }
+}
+
+// Setup image interactions (zoom, pan)
+function setupImageInteractions(viewportNumber) {
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+  const container = document.getElementById(`viewportContent${viewportNumber}`);
+
+  if (!img || !container) return;
+
+  container.onwheel = null;
+  img.onmousedown = null;
+
+  container.onwheel = (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    zoomViewport(viewportNumber, zoomFactor);
+  };
+
+  img.onmousedown = (e) => {
+    isDragging[viewportNumber] = true;
+    lastMousePos[viewportNumber] = { x: e.clientX, y: e.clientY };
+    img.style.cursor = 'grabbing';
+    e.preventDefault();
+  };
+}
+
+// Global mouse event handlers
+document.addEventListener('mousemove', (e) => {
+  for (let viewportNumber of [1, 2]) {
+    if (isDragging[viewportNumber]) {
+      const deltaX = e.clientX - lastMousePos[viewportNumber].x;
+      const deltaY = e.clientY - lastMousePos[viewportNumber].y;
+      
+      viewportPan[viewportNumber].x += deltaX;
+      viewportPan[viewportNumber].y += deltaY;
+      
+      updateImageTransform(viewportNumber);
+      
+      lastMousePos[viewportNumber] = { x: e.clientX, y: e.clientY };
+    }
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  for (let viewportNumber of [1, 2]) {
+    if (isDragging[viewportNumber]) {
+      isDragging[viewportNumber] = false;
+      const img = document.getElementById(`viewportImage${viewportNumber}`);
+      if (img) img.style.cursor = 'grab';
+    }
+  }
+});
+
+// Zoom viewport
+function zoomViewport(viewportNumber, factor) {
+  const oldZoom = viewportZoom[viewportNumber];
+  viewportZoom[viewportNumber] *= factor;
+  viewportZoom[viewportNumber] = Math.max(0.1, Math.min(5, viewportZoom[viewportNumber]));
+  
+  // Adjust pan to maintain center point during zoom
+  const zoomRatio = viewportZoom[viewportNumber] / oldZoom;
+  viewportPan[viewportNumber].x *= zoomRatio;
+  viewportPan[viewportNumber].y *= zoomRatio;
+  
+  updateImageTransform(viewportNumber);
+  updateZoomDisplay(viewportNumber);
+}
+
+// Reset zoom and pan
+function resetZoom(viewportNumber) {
+  viewportZoom[viewportNumber] = 1;
+  viewportPan[viewportNumber] = { x: 0, y: 0 };
+  updateImageTransform(viewportNumber);
+  updateZoomDisplay(viewportNumber);
+}
+
+// Update image transform
+function constrainPan(viewportNumber) {
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+  const container = document.getElementById(`viewportContent${viewportNumber}`);
+  
+  if (!img || !container) return;
+  
+  const containerRect = container.getBoundingClientRect();
+  const imgRect = img.getBoundingClientRect();
+  const zoom = viewportZoom[viewportNumber];
+  
+  // Calculate the scaled image dimensions
+  const scaledWidth = img.naturalWidth * zoom;
+  const scaledHeight = img.naturalHeight * zoom;
+  
+  // Calculate maximum allowed pan values
+  const maxPanX = Math.max(0, (scaledWidth - containerRect.width) / 2);
+  const maxPanY = Math.max(0, (scaledHeight - containerRect.height) / 2);
+  
+  // Constrain pan values
+  viewportPan[viewportNumber].x = Math.max(-maxPanX, Math.min(maxPanX, viewportPan[viewportNumber].x));
+  viewportPan[viewportNumber].y = Math.max(-maxPanY, Math.min(maxPanY, viewportPan[viewportNumber].y));
+}
+
+function updateImageTransform(viewportNumber) {
+  const img = document.getElementById(`viewportImage${viewportNumber}`);
+  if (!img) return;
+  
+  // Apply constraints before updating transform
+  constrainPan(viewportNumber);
+  
+  const zoom = viewportZoom[viewportNumber];
+  const pan = viewportPan[viewportNumber];
+  
+  img.style.transform = `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`;
+}
+
+// Update zoom display
+function updateZoomDisplay(viewportNumber) {
+  const zoomDisplay = document.getElementById(`zoomLevel${viewportNumber}`);
+  if (zoomDisplay) {
+    zoomDisplay.textContent = `${Math.round(viewportZoom[viewportNumber] * 100)}%`;
+  }
+}
+
+function updateS3TreeProgress(percent) {
+  const container = document.getElementById('fileTreeContainer');
+  container.innerHTML = `
+    <div class="tree-loading">
+      <div class="loader"></div>
+      <span style="margin-left: 10px;">Loading... ${percent}%</span>
+    </div>
+  `;
+}
+
+// Add cache status function
+async function getCacheStatus() {
+  try {
+    const response = await fetch('/api/cache-status');
+    const status = await response.json();
+    console.log('Cache Status:', status);
+    
+    // Also log CRC cache stats
+    const crcStats = imageCache.getStats();
+    console.log('CRC Cache Stats:', crcStats);
+    
+    return { ...status, crcCache: crcStats };
+  } catch (error) {
+    console.error('Error getting cache status:', error);
+    return null;
+  }
+}
+
+// Add function to display cache statistics
+function displayCacheStats() {
+  const stats = imageCache.getStats();
+  const message = `CRC Cache: ${stats.size}/${stats.maxSize} items, ${(stats.hitRate * 100).toFixed(1)}% hit rate`;
+  updatePerformanceDisplay(message);
+}
+
+// Periodically update cache stats display
+setInterval(displayCacheStats, 10000); // Every 10 seconds
+
+// Add keyboard shortcut for cancelling operations (ESC key)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    // Cancel any active operations
+    for (let viewportNumber of [1, 2]) {
+      if (progressManagers[viewportNumber].operationId) {
+        cancelOperation(viewportNumber);
+        console.log(`Cancelled operation in viewport ${viewportNumber} via ESC key`);
+      }
+    }
+  }
+});
+  </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# Starter pipeline
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- script: |
+    curl -fsSL https://aka.ms/install-azd.sh | bash
+  displayName: 'install azd'
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.11.9'
+  displayName: 'Set Python Version'
+
+- script: |
+    ls
+    ls src/backend
+    pip install -r src/backend/requirements.txt
+  displayName: 'Install Python Libraries'
+
+# Create a zip file for deployment
+- script: |
+    echo "Creating deployment package..."
+    zip -r $(Build.ArtifactStagingDirectory)/project.zip .
+  displayName: 'Create ZIP file for deployment'
+
+# Publish the zip file as a build artifact
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/project.zip'
+    ArtifactName: 'project'
+  displayName: 'Publish Artifact: project.zip'
+
+- task: DownloadBuildArtifacts@0
+  inputs:
+    artifactName: 'project'
+    downloadPath: '$(System.ArtifactsDirectory)'
+  displayName: 'Download Artifact'
+
+- task: AzureRmWebAppDeployment@4
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'retinal image viewer'
+    appType: 'apiApp'
+    WebAppName: 'riv-api'
+    packageForLinux: '$(System.ArtifactsDirectory)/project.zip'
+    ScriptType: 'Inline Script'
+    InlineScript: |
+      pip install -r src/backend/requirements.txt
+      apt-get install -y libgl1-mesa-glx libglib2.0-0
+      python src/backend/main.py
+    enableCustomDeployment: true
+    DeploymentType: 'zipDeploy'
